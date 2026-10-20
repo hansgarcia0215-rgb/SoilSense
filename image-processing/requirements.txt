@@ -1,0 +1,11 @@
+# SoilSense Image Processing Service — Python Dependencies
+# Install: pip install -r requirements.txt
+
+flask==3.1.1
+flask-cors==5.0.1
+numpy==2.2.6
+opencv-python-headless==4.11.0.86
+Pillow==11.2.1
+scikit-image==0.25.2
+gunicorn==23.0.0
+python-dotenv==1.1.0

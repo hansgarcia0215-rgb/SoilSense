@@ -1,0 +1,19 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#15803d"/>
+  <!-- Soil texture dots -->
+  <circle cx="180" cy="340" r="14" fill="#14532d" opacity="0.4"/>
+  <circle cx="256" cy="360" r="14" fill="#14532d" opacity="0.4"/>
+  <circle cx="332" cy="340" r="14" fill="#14532d" opacity="0.4"/>
+  <circle cx="140" cy="310" r="10" fill="#14532d" opacity="0.3"/>
+  <circle cx="372" cy="310" r="10" fill="#14532d" opacity="0.3"/>
+  <!-- Leaf shape -->
+  <path d="M256 120 C256 120 310 170 310 230 C310 290 280 330 256 340 C232 330 202 290 202 230 C202 170 256 120 256 120Z" 
+        fill="#ffffff" opacity="0.95"/>
+  <!-- Leaf vein -->
+  <path d="M256 140 L256 330" stroke="#15803d" stroke-width="6" stroke-linecap="round"/>
+  <path d="M256 200 C256 200 236 220 228 240" stroke="#15803d" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M256 200 C256 200 276 220 284 240" stroke="#15803d" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M256 240 C256 240 240 255 234 270" stroke="#15803d" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <path d="M256 240 C256 240 272 255 278 270" stroke="#15803d" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+</svg>

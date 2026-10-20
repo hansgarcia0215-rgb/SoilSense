@@ -1,0 +1,9 @@
+# SoilSense Fuzzy Logic Engine — Python Dependencies
+# Install: pip install -r requirements.txt
+
+flask==3.1.1
+flask-cors==5.0.1
+numpy==2.2.6
+scikit-fuzzy==0.4.2
+python-dotenv==1.1.0
+gunicorn==23.0.0

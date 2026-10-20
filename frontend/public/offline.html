@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SoilSense — Offline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #052e16 0%, #14532d 50%, #166534 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: white;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 24px;
+      padding: 40px 32px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .icon {
+      width: 72px;
+      height: 72px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 36px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .logo-circle {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo-text {
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      color: white;
+    }
+
+    p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .tips {
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+
+    .tips-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .tip {
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+      padding: 4px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .tip::before {
+      content: '•';
+      color: #4ade80;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: white;
+      color: #15803d;
+      border: none;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn:hover {
+      background: #f0fdf4;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    .status {
+      margin-top: 20px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-circle">🌱</div>
+      <span class="logo-text">SoilSense</span>
+    </div>
+
+    <!-- Offline icon -->
+    <div class="icon">📡</div>
+
+    <h1>You're offline</h1>
+    <p>
+      SoilSense needs an internet connection to analyze soil,
+      load your assessment history, and show recommendations.
+    </p>
+
+    <!-- Cached tips -->
+    <div class="tips">
+      <div class="tips-title">While offline, you can still</div>
+      <div class="tip">View previously loaded pages from cache</div>
+      <div class="tip">Review assessment results you've already opened</div>
+      <div class="tip">Check the map if tiles were cached</div>
+    </div>
+
+    <!-- Retry button -->
+    <button class="btn" onclick="window.location.reload()">
+      🔄 Try Again
+    </button>
+
+    <div class="status">
+      <span class="dot"></span>
+      No internet connection · Roxas, Oriental Mindoro
+    </div>
+  </div>
+
+  <script>
+    // Auto-redirect to dashboard once back online
+    window.addEventListener('online', () => {
+      window.location.href = '/dashboard';
+    });
+  </script>
+
+</body>
+</html>
