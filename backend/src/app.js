@@ -48,7 +48,7 @@ const serviceUrl = (key, productionUrl, localUrl) => {
 };
 const IMAGE_PROCESSING_URL = serviceUrl(
   'IMAGE_PROCESSING_URL',
-  'https://soilsense-image-processor.onrender.com',
+  'https://soilsense-image-processing.onrender.com',
   'http://localhost:5001'
 );
 const FUZZY_ENGINE_URL = serviceUrl(

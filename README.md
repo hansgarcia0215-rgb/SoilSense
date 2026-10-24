@@ -168,7 +168,7 @@ backend or its Firebase Admin credentials.
    was shared or exposed, revoke it and generate a replacement before
    deployment.
 3. Set `IMAGE_PROCESSING_URL` and `FUZZY_ENGINE_URL` on the Node API to the
-   HTTPS URLs Render assigns to `soilsense-image-processor` and
+   HTTPS URLs Render assigns to `soilsense-image-processing` and
    `soilsense-fuzzy-engine`. Generate a strong random service key, for example
    with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`,
    and set the same value as `SERVICE_API_KEY` on all three services. Do not
@@ -194,13 +194,11 @@ backend or its Firebase Admin credentials.
 
 If `/api/health/services` reports a service as misconfigured, compare the
 service identity returned by its `/health` endpoint with the expected service.
-The image-processing service is named `soilsense-image-processor` in the
-Blueprint to avoid reusing an older Render service that may have been created
-with the fuzzy-engine root directory. Sync the Blueprint and create/deploy this
-service with root directory `image-processing`; keep the fuzzy-engine service
-root directory set to `fuzzy-engine`. Verify each `/health` response reports
-the matching service identity. The backend ignores localhost service URLs in
-production and uses the Render URLs above when no valid service URL is set.
+In Render, verify that the image-processing service uses root directory
+`image-processing` and the fuzzy-engine service uses `fuzzy-engine`, then
+redeploy each service. Verify each `/health` response reports the matching
+service identity. The backend ignores localhost service URLs in production
+and uses the Render URLs above when no valid service URL is set.
 
 ---
 
