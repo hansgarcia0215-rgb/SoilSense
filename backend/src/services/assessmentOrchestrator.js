@@ -28,6 +28,7 @@ const { MUNICIPALITY, PROVINCE, REGION, isWithinRoxas } = require('../utils/roxa
 
 const IMAGE_PROCESSING_URL = process.env.IMAGE_PROCESSING_URL || 'http://localhost:5001';
 const FUZZY_ENGINE_URL     = process.env.FUZZY_ENGINE_URL     || 'http://localhost:5002';
+const SERVICE_API_KEY      = process.env.SERVICE_API_KEY;
 
 /**
  * Run the full assessment pipeline.
@@ -90,7 +91,10 @@ async function runAssessment(params) {
     });
 
     const imgRes = await axios.post(`${IMAGE_PROCESSING_URL}/analyze`, form, {
-      headers: form.getHeaders(),
+      headers: {
+        ...form.getHeaders(),
+        ...(SERVICE_API_KEY ? { 'X-Service-Api-Key': SERVICE_API_KEY } : {}),
+      },
       timeout: 30000,
     });
 
@@ -147,6 +151,7 @@ async function runAssessment(params) {
     };
 
     const fuzzyRes = await axios.post(`${FUZZY_ENGINE_URL}/infer`, fuzzyPayload, {
+      headers: SERVICE_API_KEY ? { 'X-Service-Api-Key': SERVICE_API_KEY } : {},
       timeout: 20000,
     });
 

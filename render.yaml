@@ -26,3 +26,41 @@ services:
         sync: false
       - key: ESP32_DEVICE_API_KEY
         sync: false
+      - key: IMAGE_PROCESSING_URL
+        sync: false
+      - key: FUZZY_ENGINE_URL
+        sync: false
+      - key: SERVICE_API_KEY
+        sync: false
+
+  - type: web
+    name: soilsense-image-processing
+    runtime: python
+    plan: free
+    rootDir: image-processing
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn api.app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: REQUIRE_SERVICE_API_KEY
+        value: "true"
+      - key: SERVICE_API_KEY
+        sync: false
+
+  - type: web
+    name: soilsense-fuzzy-engine
+    runtime: python
+    plan: free
+    rootDir: fuzzy-engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn api.app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: REQUIRE_SERVICE_API_KEY
+        value: "true"
+      - key: SERVICE_API_KEY
+        sync: false

@@ -23,6 +23,7 @@ Health check: GET http://localhost:5002/health
 
 import sys
 import os
+import hmac
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,6 +37,29 @@ from confidence.confidence_calculator import calculate_confidence
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3001", "http://localhost:5173"])
+
+@app.before_request
+def require_service_api_key():
+    if request.endpoint == 'health':
+        return None
+
+    expected_key = os.environ.get('SERVICE_API_KEY')
+    if not expected_key:
+        if os.environ.get('REQUIRE_SERVICE_API_KEY', '').lower() == 'true':
+            return jsonify({
+                "success": False,
+                "error": "SERVICE_AUTH_NOT_CONFIGURED",
+                "message": "The service API key is not configured.",
+            }), 503
+        return None
+
+    provided_key = request.headers.get('X-Service-Api-Key', '')
+    if not hmac.compare_digest(provided_key, expected_key):
+        return jsonify({
+            "success": False,
+            "error": "UNAUTHORIZED",
+            "message": "A valid service API key is required.",
+        }), 401
 
 
 @app.route('/health', methods=['GET'])

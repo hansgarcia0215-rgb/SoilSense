@@ -156,27 +156,41 @@ backend or its Firebase Admin credentials.
 ### Deploying the Backend to Render
 
 1. In Render, create a new **Blueprint** from this repository and select the
-   `main` branch. The root `render.yaml` defines the Node API service and its
-   `/api/health` health check.
-2. Enter the requested environment values in Render. Use the Firebase Admin
-   service-account `project_id`, `client_email`, and `private_key`, plus a
-   strong random `JWT_SECRET`, an `ESP32_DEVICE_API_KEY`, and `ADMIN_UID`.
+   `main` branch. The root `render.yaml` defines the Node API, image-processing,
+   and fuzzy-engine services. Each service has its own health check.
+2. Enter the requested environment values in Render. For the Node API, use the
+   Firebase Admin service-account `project_id`, `client_email`, and
+   `private_key`, plus a strong random `JWT_SECRET`, an `ESP32_DEVICE_API_KEY`,
+   and `ADMIN_UID`.
    Find the admin account's **User UID** in Firebase Console → Authentication →
    Users and assign that exact value to `ADMIN_UID`. Keep secrets in Render
    only; never commit them or paste them into chat. If the service account key
    was shared or exposed, revoke it and generate a replacement before
    deployment.
-3. Wait for Render to finish deploying. Open
+3. Set `IMAGE_PROCESSING_URL` and `FUZZY_ENGINE_URL` on the Node API to the
+   HTTPS URLs Render assigns to `soilsense-image-processing` and
+   `soilsense-fuzzy-engine`. Generate a strong random service key, for example
+   with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`,
+   and set the same value as `SERVICE_API_KEY` on all three services. Do not
+   use a `VITE_` variable for this secret. The Python inference endpoints
+   require this key; their `/health` endpoints remain available for Render's
+   health checks.
+4. Wait for all three Render services to finish deploying. Open
    `https://<your-render-service>.onrender.com/api/health`; it should return a
    JSON response with `"status": "running"`.
-4. Confirm Vercel's `VITE_API_BASE_URL` is `/api` with **Config** visibility.
+   Then open `https://<your-image-service>.onrender.com/health` and
+   `https://<your-fuzzy-service>.onrender.com/health`; both should return
+   `"status": "running"`. Finally check
+   `https://<your-render-service>.onrender.com/api/health/services` and confirm
+   both Python services report `"online"`.
+5. Confirm Vercel's `VITE_API_BASE_URL` is `/api` with **Config** visibility.
    The root `vercel.json` proxies API requests to the Render URL. The
    `render.yaml` CORS setting allows the production Vercel domain shown above.
    If either domain changes, update the proxy destination and
    `ALLOWED_ORIGINS` respectively.
-5. Redeploy the Vercel frontend to activate the API proxy.
-   The backend's Python image-processing and fuzzy-engine services must also
-   be deployed and configured separately for soil assessments to run.
+6. Redeploy the Vercel frontend to activate the API proxy. Free Render
+   services can sleep while idle; the first assessment after a period of
+   inactivity may take longer while the services start.
 
 ---
 
