@@ -57,6 +57,7 @@ def rank_crops(
     crops:            list,
     location_score:   float = 0.8,  # High default — Roxas lowland is good for tropical trees
     return_top_n:     int   = 3,    # Return exactly this many entries
+    include_least_suitable: bool = True,
 ) -> list:
     """
     Score and rank ALL active crops, then return the top N.
@@ -70,6 +71,8 @@ def rank_crops(
         crops:           List of crop dicts from Firestore
         location_score:  0–1 regional suitability (default 0.8 for Roxas)
         return_top_n:    How many ranked results to return (default 3)
+        include_least_suitable: Include the least suitable crop as the final
+                                recommendation instead of the third-best crop.
 
     Returns:
         List of up to return_top_n items with rank, status, score, explanations.
@@ -96,7 +99,7 @@ def rank_crops(
     # Sort descending by suitabilityScore, then alphabetically as tiebreaker
     scored.sort(key=lambda c: (-c["suitabilityScore"], c["cropName"]))
 
-    return _assign_ranks(scored, return_top_n)
+    return _assign_ranks(scored, return_top_n, include_least_suitable)
 
 
 def _score_crop(crop, ph, moisture, fertility_class, fertility_score,
@@ -260,15 +263,20 @@ def _score_range(value, val_min, val_max, val_opt,
     return score
 
 
-def _assign_ranks(scored: list, n: int) -> list:
+def _assign_ranks(scored: list, n: int, include_least_suitable: bool = True) -> list:
     """
-    Assign BEST / SECOND_BEST / NOT_SUITABLE to the top N items.
-    Always returns exactly n entries (or all if fewer than n crops).
+    Return the two best crops and, when requested, the least suitable crop.
+    Returns up to n entries if fewer than n crops are available.
     If the best crop is below threshold, it becomes CLOSEST instead.
     """
     result = []
+    count = min(max(n, 0), len(scored))
+    if include_least_suitable and count >= 3 and len(scored) > 2:
+        selected = scored[:count - 1] + [scored[-1]]
+    else:
+        selected = scored[:count]
 
-    for i, crop in enumerate(scored):
+    for i, crop in enumerate(selected):
         entry = {**crop, "rank": i + 1}
 
         if i == 0:
@@ -289,8 +297,7 @@ def _assign_ranks(scored: list, n: int) -> list:
                     f"Consider improving soil conditions before planting."
                 )
 
-        elif i == n - 1:
-            # Last slot is always NOT_SUITABLE
+        elif i == len(selected) - 1 and include_least_suitable:
             entry["status"]      = "NOT_SUITABLE"
             entry["statusLabel"] = "🚫 Not Suitable / Last Option"
             entry["recommendedAction"] = (
@@ -318,9 +325,6 @@ def _assign_ranks(scored: list, n: int) -> list:
                 )
 
         result.append(entry)
-        if len(result) == n:
-            break
-
     return result
 
 

@@ -82,7 +82,11 @@ export default function AssessmentResult() {
   const sensor = data.sensorData     || {};
   const img    = data.imageFeatures  || {};
   const loc    = data.location       || {};
-  const crops  = data.rootcropResults || data.cropRecommendations || [];
+  const crops = data.rootcropResults?.length
+    ? data.rootcropResults
+    : data.cropRecommendations?.length
+      ? data.cropRecommendations
+      : [];
   const allCrops = data.allCropsRanked || [];
   const fert   = data.fertilizerRecommendationData;
 

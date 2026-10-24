@@ -195,6 +195,7 @@ def infer():
                 visual_condition=visual_condition,
                 crops=crops,
                 return_top_n=return_top_n,
+                include_least_suitable=True,
             )
             # Full ranked list of every crop (return_top_n = len(crops))
             all_crops_ranked = rank_crops(
@@ -205,6 +206,7 @@ def infer():
                 visual_condition=visual_condition,
                 crops=crops,
                 return_top_n=len(crops),
+                include_least_suitable=False,
             )
         except Exception as e:
             # Crop ranking failure is non-fatal — fertility result still returned
