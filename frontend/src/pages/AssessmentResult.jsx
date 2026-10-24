@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
 import FertilityBadge     from '../components/common/FertilityBadge';
+import AssessmentPhoto    from '../components/common/AssessmentPhoto';
 import LoadingSpinner     from '../components/common/LoadingSpinner';
 import { SkeletonResult } from '../components/common/SkeletonLoader';
 import CropResult         from '../components/assessment/CropResult';
@@ -261,6 +262,20 @@ export default function AssessmentResult() {
           )}
         </div>
       </div>
+
+      {data.imageData?.imageUrl && (
+        <section className="card overflow-hidden p-0 animate-fade-in-up"
+                 aria-label="Uploaded soil photo">
+          <AssessmentPhoto
+            src={data.imageData.imageUrl}
+            alt={`Uploaded soil sample for assessment ${data.assessmentId}`}
+            className="max-h-80 w-full bg-cream-sand object-cover"
+          />
+          <p className="px-4 py-3 text-xs font-medium text-gray-600">
+            Uploaded soil photo · {data.assessmentId}
+          </p>
+        </section>
+      )}
 
       {/* ── Crop Recommendation ─────────────────────────────── */}
       {crops.length > 0 && (

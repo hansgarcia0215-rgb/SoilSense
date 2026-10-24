@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Search, MapPin, Calendar, Filter, PlusCircle, ArrowRight, ClipboardList } from 'lucide-react';
 import { format } from 'date-fns';
 import FertilityBadge from '../components/common/FertilityBadge';
+import AssessmentPhoto from '../components/common/AssessmentPhoto';
 import { SkeletonRow } from '../components/common/SkeletonLoader';
 import assessmentService from '../services/assessmentService';
 
@@ -138,7 +139,11 @@ export default function AssessmentHistory() {
                                hover:bg-gray-50/80 transition-all duration-150 group"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {/* Score pill */}
+                      <AssessmentPhoto
+                        src={a.imageUrl}
+                        alt={`Soil sample for assessment ${a.assessmentId}`}
+                        className="h-14 w-16 flex-shrink-0 rounded-xl object-cover"
+                      />
                       <div className={`w-10 h-10 rounded-xl ${scoreColor}
                                       flex items-center justify-center flex-shrink-0
                                       text-white text-sm font-black shadow-sm

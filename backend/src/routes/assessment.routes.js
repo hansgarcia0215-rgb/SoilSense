@@ -7,6 +7,7 @@ const router   = express.Router();
 const { body, param } = require('express-validator');
 
 const { authenticate }          = require('../middleware/auth.middleware');
+const { requireRole }           = require('../middleware/role.middleware');
 const { handleSoilImageUpload } = require('../middleware/upload.middleware');
 const { validate }              = require('../middleware/validate.middleware');
 const { createError }           = require('../utils/errorHandler');
@@ -92,6 +93,7 @@ router.get('/', async (req, res, next) => {
         fertilityClass:   d.fuzzyResult?.fertilityClass || null,
         fertilityScore:   d.fuzzyResult?.fertilityScore || null,
         bestRootcrop:     d.rootcropResults?.find(r => r.rank === 1)?.cropName || null,
+        imageUrl:         d.imageData?.imageUrl || null,
         hasLabValidation: !!d.labValidation?.isValidated,
       };
     });
@@ -138,6 +140,7 @@ router.get('/:id', async (req, res, next) => {
 
 // ─── Enter Lab Result ─────────────────────────────────────────
 router.post('/:id/lab-result',
+  requireRole(['extension_worker']),
   [
     param('id').notEmpty(),
     body('labFertilityClass')

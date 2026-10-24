@@ -76,7 +76,13 @@ export default function App() {
           <Route element={<ProtectedRoute roles={['extension_worker', 'admin']} />}>
             <Route element={<AppLayout />}>
               <Route path="/assessments"  element={<AssessmentHistory />} />
-              <Route path="/lab"          element={<LabValidation />} />
+            </Route>
+          </Route>
+
+          {/* ─── Extension Worker Only ──────────────────── */}
+          <Route element={<ProtectedRoute roles={['extension_worker']} />}>
+            <Route element={<AppLayout />}>
+              <Route path="/lab" element={<LabValidation />} />
             </Route>
           </Route>
 

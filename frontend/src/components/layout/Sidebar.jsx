@@ -30,7 +30,6 @@ const ADMIN_LINKS = [
   { to: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/assess/new',  icon: PlusCircle,      label: 'New Assessment', cta: true },
   { to: '/assessments', icon: ClipboardList,   label: 'All Assessments' },
-  { to: '/lab',         icon: FlaskConical,    label: 'Lab Validation' },
   { to: '/analytics',   icon: BarChart2,       label: 'Analytics' },
   { to: '/map',         icon: Map,             label: 'Map View' },
   { to: '/reports',     icon: FileText,        label: 'Reports' },

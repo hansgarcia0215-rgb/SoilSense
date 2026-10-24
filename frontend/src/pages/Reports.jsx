@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
 import FertilityBadge from '../components/common/FertilityBadge';
+import AssessmentPhoto from '../components/common/AssessmentPhoto';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import assessmentService from '../services/assessmentService';
@@ -142,7 +143,12 @@ export default function Reports() {
                 ? new Date(a.createdAt._seconds * 1000)
                 : a.createdAt ? new Date(a.createdAt) : null;
               return (
-                <li key={a.assessmentId} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50">
+                <li key={a.assessmentId} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50">
+                  <AssessmentPhoto
+                    src={a.imageUrl}
+                    alt={`Soil sample for assessment ${a.assessmentId}`}
+                    className="h-16 w-20 flex-shrink-0 rounded-xl object-cover"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <FertilityBadge classification={a.fertilityClass} size="sm" />

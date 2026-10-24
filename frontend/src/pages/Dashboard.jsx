@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import FertilityBadge from '../components/common/FertilityBadge';
+import AssessmentPhoto from '../components/common/AssessmentPhoto';
 import { SkeletonStatCard, SkeletonRow } from '../components/common/SkeletonLoader';
 import FertilityTrendChart from '../components/charts/FertilityTrendChart';
 import api from '../services/api';
@@ -166,7 +167,12 @@ export default function Dashboard() {
                                      transition-all duration-200" />
             </div>
 
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4">
+              <AssessmentPhoto
+                src={latest.imageUrl}
+                alt={`Soil sample for assessment ${latest.assessmentId}`}
+                className="h-24 w-28 flex-shrink-0 rounded-2xl object-cover"
+              />
               {/* Score circle */}
               <div className="relative flex-shrink-0 w-16 h-16">
                 <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
@@ -253,7 +259,11 @@ export default function Dashboard() {
                     className="flex items-center justify-between py-3 -mx-1 px-1
                                rounded-xl hover:bg-gray-50 transition-all duration-150 group">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {/* Score dot */}
+                      <AssessmentPhoto
+                        src={a.imageUrl}
+                        alt={`Soil sample for assessment ${a.assessmentId}`}
+                        className="h-12 w-14 flex-shrink-0 rounded-xl object-cover"
+                      />
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
                                       text-white text-xs font-black
                                       ${a.fertilityClass === 'fertile'  ? 'bg-green-600' :

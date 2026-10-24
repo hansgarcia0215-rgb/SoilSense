@@ -48,6 +48,24 @@ function runAutoTable(doc, options) {
   return doc.lastAutoTable ? doc.lastAutoTable.finalY : options.startY;
 }
 
+async function loadReportImage(imageUrl) {
+  const response = await fetch(imageUrl, { mode: 'cors' });
+  if (!response.ok) throw new Error(`Image request returned HTTP ${response.status}.`);
+
+  const bitmap = await createImageBitmap(await response.blob());
+  const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return {
+    dataUrl: canvas.toDataURL('image/jpeg', 0.85),
+    width: canvas.width,
+    height: canvas.height,
+  };
+}
+
 export async function generatePDFReport(data) {
   if (!data) throw new Error('No assessment data to generate report from.');
 
@@ -62,8 +80,20 @@ export async function generatePDFReport(data) {
     const sensor = data.sensorData    || {};
     const img    = data.imageFeatures || {};
     const loc    = data.location      || {};
+    const imageUrl = data.imageData?.imageUrl;
     // Support both legacy and new crop field names
-    const crops  = data.rootcropResults || data.cropRecommendations || [];
+    const crops  = data.rootcropResults?.length
+      ? data.rootcropResults
+      : data.cropRecommendations || [];
+    let uploadedImage = null;
+
+    if (imageUrl) {
+      try {
+        uploadedImage = await loadReportImage(imageUrl);
+      } catch (err) {
+        console.warn('[reportGenerator] Could not embed uploaded soil image:', err.message);
+      }
+    }
 
     // pH / moisture may come from sensor OR fuzzyInputs (manual entry)
     const phVal       = sensor.soilPH       ?? data.fuzzyInputs?.ph       ?? null;
@@ -123,6 +153,20 @@ export async function generatePDFReport(data) {
         ['GPS Coordinates', gps],
       ],
     }) + 8;
+
+    if (uploadedImage) {
+      const imageScale = Math.min(75 / uploadedImage.width, 55 / uploadedImage.height);
+      const imageWidth = uploadedImage.width * imageScale;
+      const imageHeight = uploadedImage.height * imageScale;
+      if (y > pageHeight - imageHeight - 55) { doc.addPage(); y = margin; }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...DARK);
+      doc.text('Uploaded Soil Photo', margin, y);
+      y += 4;
+      doc.addImage(uploadedImage.dataUrl, 'JPEG', margin, y, imageWidth, imageHeight);
+      y += imageHeight + 6;
+    }
 
     // ── Fertility Result ───────────────────────────────────────────────────────
     doc.setFont('helvetica', 'bold');
