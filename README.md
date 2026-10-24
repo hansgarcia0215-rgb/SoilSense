@@ -137,6 +137,20 @@ For a production frontend build, run `npm run build` from `frontend/` and deploy
 the generated `frontend/dist/` directory. The backend and other services still
 need to be deployed separately for login and soil assessments to work.
 
+### Deploying the Frontend to Vercel
+
+Import the repository into Vercel and keep the project root directory set to
+`./` (the repository root). The root `vercel.json` installs frontend
+dependencies, builds the Vite app, serves `frontend/dist/`, and routes React
+page URLs back to the app so direct links and refreshes work.
+
+In the Vercel project settings, add the frontend variables from
+`frontend/.env.example`. Set `VITE_API_BASE_URL` to the deployed backend API
+base URL (for example, `https://your-backend.example.com/api`) and configure
+the backend to allow requests from the Vercel domain. Redeploy after changing
+environment variables. Deploying the frontend alone does not deploy the
+backend or its Firebase Admin credentials.
+
 ---
 
 ## Project Structure
