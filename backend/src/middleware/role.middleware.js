@@ -8,10 +8,10 @@
  * How to use:
  *   const { requireRole } = require('../middleware/role.middleware');
  *
- *   // Only admins and researchers can access this route:
+ *   // Only admins can access this route:
  *   router.get('/analytics',
  *     authenticate,
- *     requireRole(['admin', 'researcher']),
+ *     requireRole(['admin']),
  *     analyticsController.getSummary
  *   );
  */

@@ -14,7 +14,7 @@
  *     <Route path="/dashboard" element={<Dashboard />} />
  *   </Route>
  *
- *   <Route element={<ProtectedRoute roles={['admin', 'researcher']} />}>
+ *   <Route element={<ProtectedRoute roles={['admin']} />}>
  *     <Route path="/analytics" element={<Analytics />} />
  *   </Route>
  */

@@ -100,9 +100,7 @@ export function AuthProvider({ children }) {
     isAuthenticated:    !!user,
     isFarmer:           user?.role === 'farmer',
     isExtensionWorker:  user?.role === 'extension_worker',
-    isResearcher:       user?.role === 'researcher',
     isAdmin:            user?.role === 'admin',
-    isResearcherOrAdmin: ['researcher', 'admin'].includes(user?.role),
     preferredDeviceId:  user?.preferredDeviceId || 'SS-ESP32-001',
   };
 

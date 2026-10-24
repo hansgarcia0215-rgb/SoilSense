@@ -20,6 +20,8 @@ services:
         sync: false
       - key: FIREBASE_STORAGE_BUCKET
         sync: false
+      - key: ADMIN_UID
+        sync: false
       - key: JWT_SECRET
         sync: false
       - key: ESP32_DEVICE_API_KEY

@@ -107,12 +107,12 @@ cd C:\Users\Ryan\Desktop\SOILSENSE\database\seed
 node seed.js
 ```
 
-**Demo accounts created:**
-| Role               | Email                         | Password    |
-|--------------------|-------------------------------|-------------|
-| Farmer             | farmer@soilsense.demo         | Demo1234!   |
-| Extension Worker   | extension@soilsense.demo      | Demo1234!   |
-| Researcher         | researcher@soilsense.demo     | Demo1234!   |
+The seed script adds sample soil, crop, and recommendation data, but does not
+create login accounts. Users sign in through Firebase Authentication. Public
+registration creates farmer accounts; assign staff roles from the admin user
+management page. To clean up accounts seeded by an older version, sign in as
+the configured admin, open **Manage Users**, and delete the seeded demo entries;
+their Firebase Authentication accounts are removed when present.
 
 ### 7. ESP32 Firmware (Optional)
 
@@ -160,10 +160,12 @@ backend or its Firebase Admin credentials.
    `/api/health` health check.
 2. Enter the requested environment values in Render. Use the Firebase Admin
    service-account `project_id`, `client_email`, and `private_key`, plus a
-   strong random `JWT_SECRET` and an `ESP32_DEVICE_API_KEY`. Keep these values
-   in Render only; never commit them or paste them into chat. If the service
-   account key was shared or exposed, revoke it and generate a replacement
-   before deployment.
+   strong random `JWT_SECRET`, an `ESP32_DEVICE_API_KEY`, and `ADMIN_UID`.
+   Find the admin account's **User UID** in Firebase Console → Authentication →
+   Users and assign that exact value to `ADMIN_UID`. Keep secrets in Render
+   only; never commit them or paste them into chat. If the service account key
+   was shared or exposed, revoke it and generate a replacement before
+   deployment.
 3. Wait for Render to finish deploying. Open
    `https://<your-render-service>.onrender.com/api/health`; it should return a
    JSON response with `"status": "running"`.
@@ -261,7 +263,7 @@ SOILSENSE/
 - ✅ Laboratory validation module
 - ✅ Research analytics dashboard with accuracy metrics
 - ✅ PDF report generation
-- ✅ Role-based access (Farmer / Extension Worker / Researcher / Admin)
+- ✅ Role-based access (Farmer / Extension Worker / Admin)
 - ✅ Beginner-friendly mobile-responsive UI
 
 ---

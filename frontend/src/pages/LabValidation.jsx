@@ -1,7 +1,7 @@
 /**
  * LabValidation.jsx — Enter and review laboratory soil analysis results
  *
- * Extension workers and researchers can:
+ * Extension workers and admins can:
  *   - Search for an assessment by ID
  *   - Enter lab results (fertility class, pH, organic matter, NPK)
  *   - See which assessments are already validated

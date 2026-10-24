@@ -16,7 +16,7 @@ import { BARANGAYS, MUNICIPALITY, PROVINCE } from '../utils/roxasConfig';
 
 const ROLE_LABELS = {
   farmer: 'Farmer', extension_worker: 'Extension Worker',
-  researcher: 'System Administrator', admin: 'System Administrator',
+  admin: 'System Administrator',
 };
 
 export default function Settings() {

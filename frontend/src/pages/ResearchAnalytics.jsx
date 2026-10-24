@@ -1,5 +1,5 @@
 /**
- * ResearchAnalytics.jsx — Researcher/Admin dashboard
+ * ResearchAnalytics.jsx — System administrator dashboard
  *
  * Shows accuracy metrics, processing times, fertility distribution,
  * and allows exporting the dataset.

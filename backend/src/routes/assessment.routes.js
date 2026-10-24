@@ -75,7 +75,7 @@ router.get('/', async (req, res, next) => {
         .where('userId', '==', uid)
         .get();
     } else {
-      // Admins/researchers/extension workers see all
+      // Admins and extension workers see all
       snapshot = await db.collection('soil_assessments').get();
     }
 

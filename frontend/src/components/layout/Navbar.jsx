@@ -11,14 +11,12 @@ import AppLogo from '../common/AppLogo';
 const ROLE_LABELS = {
   farmer:           'Farmer',
   extension_worker: 'Extension Worker',
-  researcher:       'System Administrator',
   admin:            'System Administrator',
 };
 
 const ROLE_COLORS = {
   farmer:           'from-green-500 to-emerald-600',
   extension_worker: 'from-soil-400 to-soil-600',
-  researcher:       'from-[#8b7ba8] to-[#6b5f8a]',
   admin:            'from-[#a8402f] to-[#7f2d20]',
 };
 

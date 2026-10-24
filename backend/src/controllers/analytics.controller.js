@@ -17,7 +17,7 @@ const { createError } = require('../utils/errorHandler');
  * GET /api/analytics/summary
  * Returns counts and averages for the dashboard cards.
  * For farmers: returns only their own data.
- * For researchers/admin: returns system-wide data.
+ * For admins and extension workers: returns system-wide data.
  */
 async function getSummary(req, res, next) {
   try {
@@ -222,7 +222,7 @@ async function getProcessingTimes(req, res, next) {
 
 /**
  * GET /api/analytics/trend
- * Returns fertility scores over time for the current user (or all for researchers)
+ * Returns fertility scores over time for the current user (or all for admins)
  * so the dashboard can render a trend sparkline/chart.
  */
 async function getTrend(req, res, next) {
@@ -283,8 +283,8 @@ async function getTrend(req, res, next) {
 
 /**
  * GET /api/analytics/export
- * Exports all assessments as CSV for researchers/analysis.
- * Farmers get only their own; researchers/admins get all.
+ * Exports all assessments as CSV for admins/analysis.
+ * Farmers get only their own; admins get all.
  */
 async function exportCSV(req, res, next) {
   try {

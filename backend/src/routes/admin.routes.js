@@ -22,7 +22,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const bcrypt  = require('bcryptjs');
 const router  = express.Router();
-const { db }  = require('../firebase/admin');
+const { admin, db }  = require('../firebase/admin');
 const { authenticate }  = require('../middleware/auth.middleware');
 const { requireRole }   = require('../middleware/role.middleware');
 const { validate }      = require('../middleware/validate.middleware');
@@ -30,6 +30,7 @@ const { createError }   = require('../utils/errorHandler');
 
 const SALT_ROUNDS = 12;
 const MANAGEABLE_ROLES = ['farmer', 'extension_worker', 'admin'];
+const ADMIN_UID = process.env.ADMIN_UID?.trim();
 
 // All admin routes require login + system administrator role
 router.use(authenticate);
@@ -121,7 +122,10 @@ router.get('/users', async (req, res, next) => {
     const snap = await db.collection('users').get();
     const data = snap.docs.map(d => {
       const { passwordHash, ...safe } = d.data();
-      return { id: d.id, ...safe };
+      const role = safe.role === 'researcher' || (ADMIN_UID && safe.uid === ADMIN_UID)
+        ? 'admin'
+        : safe.role;
+      return { id: d.id, ...safe, role };
     });
     data.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
     res.json({ success: true, data });
@@ -225,9 +229,14 @@ router.delete('/users/:id', async (req, res, next) => {
       return next(createError(400, 'SELF_DELETION',
         'You cannot delete your own account.'));
     }
-    if (doc.data().isDemoAccount) {
-      return next(createError(400, 'DEMO_ACCOUNT',
-        'Demo accounts cannot be deleted.'));
+    if (doc.data().isDemoAccount && doc.data().uid) {
+      try {
+        await admin.auth().deleteUser(doc.data().uid);
+      } catch (err) {
+        if (err.code !== 'auth/user-not-found') {
+          return next(err);
+        }
+      }
     }
 
     await docRef.delete();

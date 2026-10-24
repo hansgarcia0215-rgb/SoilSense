@@ -271,7 +271,7 @@
   border: 1px solid rgba(255,255,255,0.8);
 }
 
-/* ─── Mission Control theme (researcher analytics) ──────────── */
+/* ─── Mission Control theme (system analytics) ──────────────── */
 /* Wrap a page in className="mc" for the dark telemetry look.    */
 .mc {
   background-color: #070d08;

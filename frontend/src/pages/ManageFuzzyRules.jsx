@@ -2,7 +2,7 @@
  * ManageFuzzyRules.jsx — Admin page to view, add, edit, and toggle fuzzy rules
  *
  * The fuzzy rules determine how pH + moisture + visual condition
- * map to fertility classifications. Researchers can tune these
+ * map to fertility classifications. Admins can tune these
  * without touching the Python fuzzy engine code.
  */
 

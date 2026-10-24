@@ -72,7 +72,7 @@ export default function App() {
             </Route>
           </Route>
 
-          {/* ─── Extension Worker + Researcher ──────────── */}
+          {/* ─── Extension Worker + Admin ──────────────── */}
           <Route element={<ProtectedRoute roles={['extension_worker', 'admin']} />}>
             <Route element={<AppLayout />}>
               <Route path="/assessments"  element={<AssessmentHistory />} />
@@ -81,7 +81,7 @@ export default function App() {
           </Route>
 
           {/* ─── System Administrator Only ───────────────── */}
-          <Route element={<ProtectedRoute roles={['researcher', 'admin']} />}>
+          <Route element={<ProtectedRoute roles={['admin']} />}>
             <Route element={<AppLayout />}>
               <Route path="/analytics"    element={<ResearchAnalytics />} />
               <Route path="/admin/crops"  element={<ManageCrops />} />

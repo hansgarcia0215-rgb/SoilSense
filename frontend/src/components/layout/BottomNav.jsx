@@ -13,7 +13,6 @@ import { useAuth } from '../../context/AuthContext';
 const HISTORY_BY_ROLE = {
   farmer: '/history',
   extension_worker: '/assessments',
-  researcher: '/assessments',
   admin: '/assessments',
 };
 

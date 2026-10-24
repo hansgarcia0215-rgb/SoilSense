@@ -1,7 +1,7 @@
 /**
  * ManageCrops.jsx — Admin page to view, add, edit, and delete rootcrops
  *
- * Researchers and admins can manage the crop database that drives
+ * Admins can manage the crop database that drives
  * the rootcrop suitability engine.
  */
 

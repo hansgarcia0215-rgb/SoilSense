@@ -9,6 +9,8 @@
 const { auth, db } = require('../firebase/admin');
 const { createError } = require('../utils/errorHandler');
 
+const ADMIN_UID = process.env.ADMIN_UID?.trim();
+
 async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
 
@@ -23,15 +25,17 @@ async function authenticate(req, res, next) {
     const decoded = await auth.verifyIdToken(token);
 
     // Fetch extended profile from Firestore (for role, barangay, etc.)
-    let role = 'farmer';
+    let role = decoded.uid === ADMIN_UID ? 'admin' : 'farmer';
     try {
       const userDoc = await db.collection('users').doc(decoded.uid).get();
       if (userDoc.exists) {
-        role = userDoc.data().role || 'farmer';
+        const storedRole = userDoc.data().role || 'farmer';
+        role = storedRole === 'researcher' ? 'admin' : storedRole;
       }
     } catch {
       // Profile not found yet — use default role
     }
+    if (decoded.uid === ADMIN_UID) role = 'admin';
 
     req.user = {
       uid:         decoded.uid,

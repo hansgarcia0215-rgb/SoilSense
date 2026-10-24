@@ -4,7 +4,7 @@
  * Create   — new farmer / extension worker / system administrator accounts
  * Read     — searchable list of all accounts
  * Update   — change role, activate/deactivate
- * Delete   — permanently remove an account (demo accounts protected)
+ * Delete   — permanently remove an account
  */
 
 import { useState, useEffect } from 'react';
@@ -268,7 +268,7 @@ export default function ManageUsers() {
                         <div className="font-semibold text-gray-900 flex items-center gap-1.5">
                           {user.displayName}
                           {isSelf && <span className="text-xs text-green-600 font-normal">(you)</span>}
-                          {user.isDemoAccount && <span className="text-xs text-soil-700 font-normal">demo</span>}
+                          {user.isDemoAccount && <span className="text-xs text-soil-700 font-normal">seeded demo</span>}
                         </div>
                         {createdAt && (
                           <div className="text-xs text-gray-500">
@@ -314,9 +314,9 @@ export default function ManageUsers() {
                       </button>
                       <button
                         onClick={() => setDeleting(user)}
-                        disabled={isSelf || user.isDemoAccount}
+                        disabled={isSelf}
                         className={`p-1.5 hover:bg-[#f5e0da] text-[#a8402f] rounded-lg transition-colors
-                          ${isSelf || user.isDemoAccount ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          ${isSelf ? 'opacity-30 cursor-not-allowed' : ''}`}
                         aria-label={`Delete ${user.displayName}`}
                       >
                         <Trash2 className="w-4 h-4" />

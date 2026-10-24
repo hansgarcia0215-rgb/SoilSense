@@ -10,6 +10,8 @@ const { db }  = require('../firebase/admin');
 const { createError } = require('../utils/errorHandler');
 const { MUNICIPALITY, PROVINCE } = require('../utils/roxasConfig');
 
+const ADMIN_UID = process.env.ADMIN_UID?.trim();
+
 // ─── Sync Profile ─────────────────────────────────────────────
 
 /**
@@ -39,6 +41,9 @@ async function syncProfile(req, res, next) {
       const update = { updatedAt: new Date() };
       if (displayName) update.displayName = displayName.trim();
       if (barangay !== undefined) update.barangay = barangay;
+      if (uid === ADMIN_UID || existing.data().role === 'researcher') {
+        update.role = 'admin';
+      }
       await userRef.update(update);
     } else {
       // New user — create full profile document
@@ -46,7 +51,7 @@ async function syncProfile(req, res, next) {
         uid,
         displayName:  (displayName || '').trim(),
         email:        email || req.user.email || '',
-        role:         'farmer',
+        role:         uid === ADMIN_UID ? 'admin' : 'farmer',
         barangay:     barangay || '',
         municipality: municipality || MUNICIPALITY,
         province:     province    || PROVINCE,
@@ -83,6 +88,23 @@ async function getProfile(req, res, next) {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
 
     if (!userDoc.exists) {
+      if (req.user.uid === ADMIN_UID) {
+        const adminProfile = {
+          uid: req.user.uid,
+          email: req.user.email || '',
+          displayName: req.user.displayName || 'System Administrator',
+          role: 'admin',
+          barangay: '',
+          municipality: MUNICIPALITY,
+          province: PROVINCE,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        await userDoc.ref.set(adminProfile);
+        return res.json({ success: true, user: adminProfile });
+      }
+
       // Profile doesn't exist yet — return basic info from Firebase token
       return res.json({
         success: true,
@@ -90,7 +112,7 @@ async function getProfile(req, res, next) {
           uid:         req.user.uid,
           email:       req.user.email,
           displayName: req.user.displayName,
-          role:        'farmer',
+          role:        req.user.role,
           barangay:    '',
           municipality: MUNICIPALITY,
           province:    PROVINCE,
@@ -100,6 +122,12 @@ async function getProfile(req, res, next) {
     }
 
     const { passwordHash, ...safeUser } = userDoc.data();
+    safeUser.role = req.user.role;
+
+    if (req.user.uid === ADMIN_UID && userDoc.data().role !== 'admin') {
+      await userDoc.ref.update({ role: 'admin', updatedAt: new Date() });
+    }
+
     res.json({ success: true, user: safeUser });
   } catch (err) {
     next(err);

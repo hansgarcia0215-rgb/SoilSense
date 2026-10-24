@@ -26,7 +26,7 @@ const EXTENSION_LINKS = [
   { to: '/map',         icon: Map,             label: 'Map View' },
   { to: '/reports',     icon: FileText,        label: 'Reports' },
 ];
-const RESEARCHER_LINKS = [
+const ADMIN_LINKS = [
   { to: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/assess/new',  icon: PlusCircle,      label: 'New Assessment', cta: true },
   { to: '/assessments', icon: ClipboardList,   label: 'All Assessments' },
@@ -40,12 +40,12 @@ const RESEARCHER_LINKS = [
 ];
 const ROLE_LINKS = {
   farmer: FARMER_LINKS, extension_worker: EXTENSION_LINKS,
-  researcher: RESEARCHER_LINKS, admin: RESEARCHER_LINKS,
+  admin: ADMIN_LINKS,
 };
 
 const ROLE_LABELS = {
   farmer: 'Farmer', extension_worker: 'Extension Worker',
-  researcher: 'System Administrator', admin: 'System Administrator',
+  admin: 'System Administrator',
 };
 
 export default function Sidebar({ isOpen, onClose }) {

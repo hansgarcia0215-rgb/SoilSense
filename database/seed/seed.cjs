@@ -5,7 +5,6 @@
  *   node ../database/seed/seed.cjs
  *
  * Creates:
- *   - 3 demo users
  *   - 22 fruit/tree farm crops (Afipanio Lumbres farm)
  *   - 15 fuzzy rules
  *   - Agricultural standards
@@ -17,7 +16,6 @@
 require('dotenv').config({ path: `${__dirname}/../../backend/.env` });
 
 const BACKEND_MODULES = `${__dirname}/../../backend/node_modules`;
-const bcrypt = require(`${BACKEND_MODULES}/bcryptjs`);
 const admin  = require(`${BACKEND_MODULES}/firebase-admin`);
 
 if (!admin.apps.length) {
@@ -32,8 +30,6 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
-const SALT_ROUNDS = 12;
-
 async function seedCollection(collectionName, documents, idField = null) {
   console.log(`\nSeeding ${collectionName}...`);
   const batch = db.batch();
@@ -47,34 +43,7 @@ async function seedCollection(collectionName, documents, idField = null) {
   console.log(`  ✓ ${documents.length} document(s) written`);
 }
 
-// ─── 1. USERS ─────────────────────────────────────────────────────────────────
-
-async function seedUsers() {
-  const hash = await bcrypt.hash('Demo1234!', SALT_ROUNDS);
-  const users = [
-    {
-      uid: 'demo-farmer-001', displayName: 'Juan dela Cruz',
-      email: 'farmer@soilsense.demo', passwordHash: hash, role: 'farmer',
-      barangay: 'Canubing I', municipality: 'Roxas', province: 'Oriental Mindoro',
-      isActive: true, isDemoAccount: true, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01'),
-    },
-    {
-      uid: 'demo-ext-001', displayName: 'Maria Santos',
-      email: 'extension@soilsense.demo', passwordHash: hash, role: 'extension_worker',
-      barangay: 'Poblacion I', municipality: 'Roxas', province: 'Oriental Mindoro',
-      isActive: true, isDemoAccount: true, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01'),
-    },
-    {
-      uid: 'demo-researcher-001', displayName: 'Dr. Ana Reyes',
-      email: 'researcher@soilsense.demo', passwordHash: hash, role: 'researcher',
-      barangay: 'Poblacion II', municipality: 'Roxas', province: 'Oriental Mindoro',
-      isActive: true, isDemoAccount: true, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01'),
-    },
-  ];
-  await seedCollection('users', users, 'uid');
-}
-
-// ─── 2. CROPS — 22 Afipanio Lumbres Farm Crops ────────────────────────────────
+// ─── 1. CROPS — 22 Afipanio Lumbres Farm Crops ────────────────────────────────
 // fertilityMin drives crop recommendation from the fuzzy fertility result:
 //   "poor"     = tolerates degraded soil
 //   "moderate" = needs at least moderate fertility
@@ -317,7 +286,7 @@ async function seedFuzzyRules() {
     { ruleId: 'r14', ph: 'strongly_acidic',  moisture: 'dry',      visualCondition: 'moderate', fertilityClass: 'poor',     strength: 0.8,  description: 'Strongly acidic + dry + moderate visual → Poor' },
     { ruleId: 'r15', ph: 'acidic',           moisture: 'dry',      visualCondition: 'poor',     fertilityClass: 'poor',     strength: 0.75, description: 'Acidic + dry + poor visual → Poor' },
   ];
-  const rulesWithMeta = rules.map(r => ({ ...r, isActive: true, isDemoData: true, dataSource: 'DEMO — Configurable by Researcher/Admin', createdAt: new Date() }));
+  const rulesWithMeta = rules.map(r => ({ ...r, isActive: true, isDemoData: true, dataSource: 'DEMO — Configurable by Admin', createdAt: new Date() }));
   await seedCollection('fuzzy_rules', rulesWithMeta, 'ruleId');
 }
 
@@ -350,7 +319,7 @@ async function seedAgriculturalStandards() {
     },
     {
       standardId: 'fertility_thresholds', category: 'fertility_score', name: 'Fertility Score Thresholds',
-      isDemoData: true, dataSource: 'DEMO — Configurable by Researcher/Admin',
+      isDemoData: true, dataSource: 'DEMO — Configurable by Admin',
       ranges: [
         { label: 'Poor',     min: 0,  max: 39,  color: '#dc2626' },
         { label: 'Moderate', min: 40, max: 69,  color: '#d97706' },
@@ -437,7 +406,7 @@ async function seedFarmProfiles() {
     {
       farmId:    'farm-lumbres-001',
       farmName:  'AFIPANIO LUMBRES',
-      ownerId:   'demo-farmer-001',
+      ownerId:   'seed-demo-farmer',
       barangay:  'Roxas',
       municipality: 'Roxas',
       province:  'Oriental Mindoro',
@@ -460,7 +429,7 @@ async function seedSampleAssessments() {
   const assessments = [
     {
       assessmentId: 'SS-2026-0001',
-      userId: 'demo-farmer-001', farmerName: 'Juan dela Cruz',
+      userId: 'seed-demo-farmer', farmerName: 'Juan dela Cruz',
       status: 'completed', isDemoData: true,
       createdAt: new Date('2026-09-15T08:30:00Z'),
       location: { latitude: 12.5882, longitude: 121.5075, barangay: 'Canubing I', municipality: 'Roxas', province: 'Oriental Mindoro' },
@@ -477,7 +446,7 @@ async function seedSampleAssessments() {
     },
     {
       assessmentId: 'SS-2026-0002',
-      userId: 'demo-farmer-001', farmerName: 'Juan dela Cruz',
+      userId: 'seed-demo-farmer', farmerName: 'Juan dela Cruz',
       status: 'completed', isDemoData: true,
       createdAt: new Date('2026-09-28T10:15:00Z'),
       location: { latitude: 12.5901, longitude: 121.5112, barangay: 'Bayanan I', municipality: 'Roxas', province: 'Oriental Mindoro' },
@@ -494,7 +463,7 @@ async function seedSampleAssessments() {
     },
     {
       assessmentId: 'SS-2026-0003',
-      userId: 'demo-researcher-001', farmerName: 'Dr. Ana Reyes (Demo Site)',
+      userId: 'seed-demo-admin', farmerName: 'Demo Site',
       status: 'completed', isDemoData: true,
       createdAt: new Date('2026-10-02T14:45:00Z'),
       location: { latitude: 12.5855, longitude: 121.5021, barangay: 'Pili', municipality: 'Roxas', province: 'Oriental Mindoro' },
@@ -508,7 +477,7 @@ async function seedSampleAssessments() {
       ],
       fertilizerRecommendation: 'fert-fertile-general',
       processingTimeMs: 5100,
-      labValidation: { isValidated: true, labFertilityClass: 'fertile', labPH: 6.7, labOrgMatter: '3.2%', enteredAt: new Date('2026-10-03T09:00:00Z'), enteredBy: 'demo-researcher-001', notes: 'DEMO LAB DATA — not from a real laboratory analysis.' },
+      labValidation: { isValidated: true, labFertilityClass: 'fertile', labPH: 6.7, labOrgMatter: '3.2%', enteredAt: new Date('2026-10-03T09:00:00Z'), enteredBy: 'seed-demo-admin', notes: 'DEMO LAB DATA — not from a real laboratory analysis.' },
     },
   ];
   await seedCollection('soil_assessments', assessments, 'assessmentId');
@@ -532,7 +501,6 @@ async function main() {
   console.log('Farm: AFIPANIO LUMBRES — 22 fruit/tree crops');
   console.log('Crop recommendation driven by soil fertility result\n');
   try {
-    await seedUsers();
     await seedCrops();
     await seedFuzzyRules();
     await seedAgriculturalStandards();
@@ -541,10 +509,7 @@ async function main() {
     await seedSampleAssessments();
     await seedSystemSettings();
     console.log('\n✅ Seeding complete!');
-    console.log('\nDemo Login Credentials:');
-    console.log('  Farmer:     farmer@soilsense.demo      / Demo1234!');
-    console.log('  Extension:  extension@soilsense.demo   / Demo1234!');
-    console.log('  Researcher: researcher@soilsense.demo  / Demo1234!\n');
+    console.log('\nNo demo login accounts are created. Create users through Firebase Authentication.');
   } catch (err) {
     console.error('\n❌ Seeding failed:', err.message);
     console.error(err.stack);

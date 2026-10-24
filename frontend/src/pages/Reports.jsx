@@ -3,7 +3,7 @@
  *
  * Lets users:
  *  - Download a PDF report for any past assessment
- *  - Export the full dataset as CSV (researchers/admins)
+ *  - Export the full dataset as CSV (admins and extension workers)
  *  - Understand what each report contains
  */
 
@@ -23,8 +23,8 @@ import api from '../services/api';
 import { generatePDFReport } from '../utils/reportGenerator';
 
 export default function Reports() {
-  const { isResearcherOrAdmin, isExtensionWorker } = useAuth();
-  const canExportCSV = isResearcherOrAdmin || isExtensionWorker;
+  const { isAdmin, isExtensionWorker } = useAuth();
+  const canExportCSV = isAdmin || isExtensionWorker;
 
   const [assessments, setAssessments] = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -99,7 +99,7 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* CSV export card (researchers/extension) */}
+      {/* CSV export card (admins/extension workers) */}
       {canExportCSV && (
         <div className="card flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

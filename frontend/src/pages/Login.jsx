@@ -10,11 +10,6 @@ import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AppLogo from '../components/common/AppLogo';
 
-const DEMO_ACCOUNTS = [
-  { label: 'Farmer',     email: 'farmer@soilsense.demo',     color: 'bg-green-100  text-green-700  border-green-200' },
-  { label: 'Researcher', email: 'researcher@soilsense.demo', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-];
-
 // Map Firebase error codes to friendly messages
 function firebaseErrorMsg(code) {
   const map = {
@@ -84,8 +79,6 @@ export default function Login() {
       setGoogleLoading(false);
     }
   };
-
-  const fillDemo = (email) => setForm({ email, password: 'Demo1234!' });
 
   return (
     <div className="min-h-screen flex">
@@ -220,25 +213,6 @@ export default function Login() {
                <>Sign In <ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
-
-          {/* Demo accounts */}
-          <div className="mt-5 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 mb-2.5 uppercase tracking-wide">
-              Demo accounts — click to fill
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {DEMO_ACCOUNTS.map(a => (
-                <button key={a.email} type="button" onClick={() => fillDemo(a.email)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border
-                              hover:scale-105 active:scale-95 transition-transform ${a.color}`}>
-                  {a.label}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] text-gray-400 mt-2">
-              Password: <code className="font-mono bg-white px-1 py-0.5 rounded">Demo1234!</code>
-            </p>
-          </div>
 
           <p className="text-center mt-5 text-sm text-gray-500">
             Don't have an account?{' '}
