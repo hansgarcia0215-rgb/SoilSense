@@ -13,6 +13,7 @@
 
 import jsPDF from 'jspdf';
 import autoTablePlugin from 'jspdf-autotable';
+import assessmentService from '../services/assessmentService';
 
 // Color palette
 const GREEN = [22, 163, 74];
@@ -48,11 +49,17 @@ function runAutoTable(doc, options) {
   return doc.lastAutoTable ? doc.lastAutoTable.finalY : options.startY;
 }
 
-async function loadReportImage(imageUrl) {
-  const response = await fetch(imageUrl, { mode: 'cors' });
-  if (!response.ok) throw new Error(`Image request returned HTTP ${response.status}.`);
+async function loadReportImage(assessmentId, imageUrl) {
+  let imageBlob;
+  if (assessmentId) {
+    imageBlob = (await assessmentService.getImage(assessmentId)).data;
+  } else {
+    const response = await fetch(imageUrl, { mode: 'cors' });
+    if (!response.ok) throw new Error(`Image request returned HTTP ${response.status}.`);
+    imageBlob = await response.blob();
+  }
 
-  const bitmap = await createImageBitmap(await response.blob());
+  const bitmap = await createImageBitmap(imageBlob);
   const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale);
@@ -87,9 +94,12 @@ export async function generatePDFReport(data) {
       : data.cropRecommendations || [];
     let uploadedImage = null;
 
-    if (imageUrl) {
+    if (data.imageData?.imagePath || imageUrl) {
       try {
-        uploadedImage = await loadReportImage(imageUrl);
+        uploadedImage = await loadReportImage(
+          data.imageData?.imagePath ? data.assessmentId : null,
+          imageUrl
+        );
       } catch (err) {
         console.warn('[reportGenerator] Could not embed uploaded soil image:', err.message);
       }

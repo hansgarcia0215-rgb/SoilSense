@@ -10,7 +10,6 @@ const { authenticate }          = require('../middleware/auth.middleware');
 const { requireRole }           = require('../middleware/role.middleware');
 const { handleSoilImageUpload } = require('../middleware/upload.middleware');
 const { validate }              = require('../middleware/validate.middleware');
-const { getAssessmentImageUrl } = require('../utils/assessmentImage');
 const { createError }           = require('../utils/errorHandler');
 
 // All assessment routes require authentication
@@ -94,7 +93,7 @@ router.get('/', async (req, res, next) => {
         fertilityClass:   d.fuzzyResult?.fertilityClass || null,
         fertilityScore:   d.fuzzyResult?.fertilityScore || null,
         bestRootcrop:     d.rootcropResults?.find(r => r.rank === 1)?.cropName || null,
-        imageData:        d.imageData || {},
+        hasImage:         !!(d.imageData?.imagePath || d.imageData?.imageUrl),
         hasLabValidation: !!d.labValidation?.isValidated,
       };
     });
@@ -108,12 +107,6 @@ router.get('/', async (req, res, next) => {
 
     // Apply limit after sorting
     data = data.slice(0, limit);
-
-    data = await Promise.all(data.map(async assessment => {
-      const imageUrl = await getAssessmentImageUrl(assessment.imageData);
-      const { imageData, ...summary } = assessment;
-      return { ...summary, imageUrl };
-    }));
 
     res.json({ success: true, total: data.length, data });
   } catch (err) {
@@ -139,16 +132,63 @@ router.get('/:id', async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
     }
 
-    res.json({
-      success: true,
-      data: {
-        ...data,
-        imageData: {
-          ...data.imageData,
-          imageUrl: await getAssessmentImageUrl(data.imageData),
-        },
-      },
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── Stream Assessment Image ───────────────────────────────────
+router.get('/:id/image', async (req, res, next) => {
+  try {
+    const { db, storage } = require('../firebase/admin');
+    const { uid, role } = req.user;
+    const doc = await db.collection('soil_assessments').doc(req.params.id).get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'Assessment not found.' });
+    }
+
+    const assessment = doc.data();
+    if (role === 'farmer' && assessment.userId !== uid) {
+      return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
+    }
+
+    const imagePath = assessment.imageData?.imagePath;
+    if (typeof imagePath !== 'string' || !imagePath.startsWith('soil-images/')) {
+      return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'No stored image is available for this assessment.' });
+    }
+
+    const file = storage.bucket().file(imagePath);
+    let metadata;
+    try {
+      [metadata] = await file.getMetadata();
+    } catch (err) {
+      if (err.code === 404) {
+        return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'The stored assessment image was not found.' });
+      }
+      throw err;
+    }
+
+    if (!metadata.contentType?.startsWith('image/')) {
+      return res.status(415).json({ success: false, error: 'INVALID_IMAGE', message: 'The stored assessment file is not an image.' });
+    }
+
+    res.set({
+      'Content-Type': metadata.contentType,
+      'Cache-Control': 'private, max-age=300',
+      'X-Content-Type-Options': 'nosniff',
     });
+
+    const imageStream = file.createReadStream();
+    imageStream.on('error', err => {
+      if (res.headersSent) {
+        res.destroy(err);
+      } else {
+        next(err);
+      }
+    });
+    imageStream.pipe(res);
   } catch (err) {
     next(err);
   }

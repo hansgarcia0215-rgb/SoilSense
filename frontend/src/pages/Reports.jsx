@@ -145,6 +145,7 @@ export default function Reports() {
               return (
                 <li key={a.assessmentId} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50">
                   <AssessmentPhoto
+                    assessmentId={a.assessmentId}
                     src={a.imageUrl}
                     alt={`Soil sample for assessment ${a.assessmentId}`}
                     className="h-16 w-20 flex-shrink-0 rounded-xl object-cover"

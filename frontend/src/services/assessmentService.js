@@ -66,6 +66,13 @@ const assessmentService = {
     return res.data;
   },
 
+  async getImage(assessmentId, signal) {
+    return api.get(`/assessments/${encodeURIComponent(assessmentId)}/image`, {
+      responseType: 'blob',
+      signal,
+    });
+  },
+
   /**
    * Enter a laboratory validation result for an assessment.
    * @param {string} assessmentId

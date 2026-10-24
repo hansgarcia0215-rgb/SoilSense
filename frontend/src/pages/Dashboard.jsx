@@ -169,6 +169,7 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-4">
               <AssessmentPhoto
+                assessmentId={latest.assessmentId}
                 src={latest.imageUrl}
                 alt={`Soil sample for assessment ${latest.assessmentId}`}
                 className="h-24 w-28 flex-shrink-0 rounded-2xl object-cover"
@@ -260,6 +261,7 @@ export default function Dashboard() {
                                rounded-xl hover:bg-gray-50 transition-all duration-150 group">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <AssessmentPhoto
+                        assessmentId={a.assessmentId}
                         src={a.imageUrl}
                         alt={`Soil sample for assessment ${a.assessmentId}`}
                         className="h-12 w-14 flex-shrink-0 rounded-xl object-cover"

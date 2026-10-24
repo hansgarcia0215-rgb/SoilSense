@@ -140,6 +140,7 @@ export default function AssessmentHistory() {
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <AssessmentPhoto
+                        assessmentId={a.assessmentId}
                         src={a.imageUrl}
                         alt={`Soil sample for assessment ${a.assessmentId}`}
                         className="h-14 w-16 flex-shrink-0 rounded-xl object-cover"
