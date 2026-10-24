@@ -28,11 +28,11 @@ export default function InstallPrompt() {
     const dismissed = localStorage.getItem('pwa_install_dismissed');
     if (dismissed) return;
 
-    // Detect iOS (Safari doesn't support beforeinstallprompt)
+    // iPadOS can present a desktop user agent while still being an iOS device.
     const ua = window.navigator.userAgent.toLowerCase();
-    const iosDevice = /iphone|ipad|ipod/.test(ua);
-    const safariOnly = /safari/.test(ua) && !/chrome/.test(ua);
-    if (iosDevice && safariOnly) {
+    const iosDevice = /iphone|ipad|ipod/.test(ua) ||
+      (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+    if (iosDevice) {
       setIsIOS(true);
       // Show iOS instructions after a short delay
       setTimeout(() => setShow(true), 3000);

@@ -122,6 +122,21 @@ node seed.js
 4. Update Wi-Fi credentials and API URL in the configuration section
 5. Upload to your ESP32 board
 
+## Install SoilSense on a Mobile Device
+
+SoilSense is a Progressive Web App (PWA). Deploy the built frontend to an HTTPS
+host to make installation available; browser installation is not available from
+a public HTTP site.
+
+- **Android:** Open the deployed site in Chrome or Edge, then tap **Install app**
+  in the SoilSense prompt or choose **Install app** from the browser menu.
+- **iPhone or iPad:** Open the site in Safari, tap **Share**, choose **Add to
+  Home Screen**, then tap **Add**.
+
+For a production frontend build, run `npm run build` from `frontend/` and deploy
+the generated `frontend/dist/` directory. The backend and other services still
+need to be deployed separately for login and soil assessments to work.
+
 ---
 
 ## Project Structure

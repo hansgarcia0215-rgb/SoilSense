@@ -8,15 +8,11 @@ export default defineConfig({
 
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // The app registers the generated Workbox service worker in main.jsx.
+      injectRegister: false,
 
-      // ── Use our static manifest file instead of generated one ──
-      // The manifest.webmanifest is in public/ and served as-is.
-      // We disable manifest injection here to avoid the Rolldown issue.
+      // Use the static manifest from public/ rather than generating one.
       manifest: false,
-      injectManifest: {
-        swSrc: undefined,
-      },
 
       // ── Workbox service worker ─────────────────────────────────
       workbox: {
