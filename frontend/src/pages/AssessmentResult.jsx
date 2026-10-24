@@ -81,6 +81,7 @@ export default function AssessmentResult() {
   const f      = data.fuzzyResult    || {};
   const sensor = data.sensorData     || {};
   const img    = data.imageFeatures  || {};
+  const serviceStatus = data.serviceStatus || {};
   const loc    = data.location       || {};
   const crops = data.rootcropResults?.length
     ? data.rootcropResults
@@ -221,10 +222,12 @@ export default function AssessmentResult() {
               />
               <MeasTile
                 label="Image"
-                value={!img.imageQuality || img.imageQuality === 'unknown' ? 'N/A'
+                value={!img.imageQuality || img.imageQuality === 'unknown' ? 'Unavailable'
                   : img.imageQuality.charAt(0).toUpperCase() + img.imageQuality.slice(1)}
                 sub={img.qualityScore != null ? `Score: ${(img.qualityScore * 100).toFixed(0)}%`
-                  : (!img.imageQuality || img.imageQuality === 'unknown') ? 'Offline' : '—'}
+                  : (!img.imageQuality || img.imageQuality === 'unknown')
+                    ? serviceStatus.imageProcessing?.message || 'Processing unavailable'
+                    : '—'}
                 color={img.imageQuality === 'good' ? 'text-green-600' :
                        img.imageQuality === 'moderate' ? 'text-amber-500' : 'text-gray-500'}
                 bg="bg-white/70"
@@ -250,7 +253,10 @@ export default function AssessmentResult() {
           {(!img.imageQuality || img.imageQuality === 'unknown') && (
             <div className="flex items-start gap-2 bg-white/60 rounded-xl p-3 mt-3 text-xs text-gray-500">
               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-400" />
-              Image analysis was unavailable — start the image processing service (port 5001) for full accuracy.
+              Image analysis was unavailable
+              {serviceStatus.imageProcessing?.message
+                ? `: ${serviceStatus.imageProcessing.message}`
+                : '. Check the image-processing service configuration and retry.'}
             </div>
           )}
         </div>
@@ -303,7 +309,6 @@ export default function AssessmentResult() {
               <CropComparison crops={crops} />
             </div>
           )}
-
           {/* Full crops ranking */}
           {allCrops.length > 3 && (
             <>
@@ -359,6 +364,18 @@ export default function AssessmentResult() {
                   <p className="text-xs text-gray-500 px-4 py-3 bg-gray-50 border-t border-gray-100">
                     🌿 = currently on farm · All scores driven by the{' '}
                     <span className="font-semibold capitalize">{fClass}</span> soil fertility result
+                  </p>
+                </div>
+              )}
+              {crops.length === 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <p className="font-bold">Crop recommendations are unavailable</p>
+                  <p className="mt-1 text-xs">
+                    {serviceStatus.fuzzyEngine?.status === 'offline'
+                      ? serviceStatus.fuzzyEngine.message
+                      : data.activeCropCount === 0
+                        ? 'No active crop records were sent for ranking. Confirm the crops collection is seeded and the crops are active, then submit a new assessment.'
+                        : 'The fuzzy engine did not return crop recommendations. Confirm the latest fuzzy-engine deployment is running, then submit a new assessment.'}
                   </p>
                 </div>
               )}

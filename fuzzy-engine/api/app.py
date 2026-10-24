@@ -75,6 +75,14 @@ def health():
         "version": "2.0.0",
     })
 
+@app.route('/ready', methods=['GET'])
+def ready():
+    return jsonify({
+        "success": True,
+        "service": "SoilSense Fuzzy Logic Engine",
+        "ready": True,
+    })
+
 
 @app.route('/infer', methods=['POST'])
 def infer():

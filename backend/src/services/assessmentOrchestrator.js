@@ -96,6 +96,10 @@ async function runAssessment(params) {
   let imageFeatures = {};
   let derivedInputs = { visual_condition: 'moderate', image_quality: 'moderate' };
   let qualityWarning = null;
+  const serviceStatus = {
+    imageProcessing: { status: 'offline', message: null },
+    fuzzyEngine: { status: 'offline', message: null },
+  };
 
   try {
     // Build FormData with the image buffer
@@ -114,21 +118,29 @@ async function runAssessment(params) {
       timeout: 30000,
     });
 
-    if (imgRes.data.success) {
-      imageFeatures = {
-        ...imgRes.data.colorFeatures,
-        ...imgRes.data.textureFeatures,
-        imageQuality:  imgRes.data.quality?.overall_quality,
-        qualityScore:  imgRes.data.quality?.quality_score,
-        qualityIssues: imgRes.data.quality?.issues,
-        originalSize:  imgRes.data.originalSize,
-      };
-      derivedInputs = imgRes.data.derivedInputs || derivedInputs;
-      qualityWarning = imgRes.data.qualityWarning;
+    if (!imgRes.data.success) {
+      throw new Error(imgRes.data.message || 'Image service returned an unsuccessful response.');
     }
+
+    imageFeatures = {
+      ...imgRes.data.colorFeatures,
+      ...imgRes.data.textureFeatures,
+      imageQuality: imgRes.data.quality?.overall_quality,
+      qualityScore: imgRes.data.quality?.quality_score,
+      qualityIssues: imgRes.data.quality?.issues,
+      originalSize: imgRes.data.originalSize,
+    };
+    derivedInputs = imgRes.data.derivedInputs || derivedInputs;
+    qualityWarning = imgRes.data.qualityWarning;
+    serviceStatus.imageProcessing = { status: 'online', message: null };
   } catch (err) {
     console.error('[Orchestrator] Image processing service error:', err.message);
-    // Use fallback — assessment continues with limited image data
+    serviceStatus.imageProcessing = {
+      status: 'offline',
+      message: err.response?.status === 401
+        ? 'Service API key was rejected. Match SERVICE_API_KEY across the API and both Python services.'
+        : err.response?.data?.message || err.message,
+    };
     imageFeatures = { imageQuality: 'unknown', note: 'Image processing service unavailable' };
   }
 
@@ -171,27 +183,41 @@ async function runAssessment(params) {
       timeout: 20000,
     });
 
-    if (fuzzyRes.data.success) {
-      const fd = fuzzyRes.data;
-      fuzzyResult = {
-        fertilityClass:   fd.fertility.classification,
-        fertilityScore:   fd.fertility.score,
-        confidence:       fd.confidence.score,
-        confidenceLevel:  fd.confidence.level,
-        phFuzzySet:       fd.fertility.phFuzzySet,
-        moistureFuzzySet: fd.fertility.moistureFuzzySet,
-        activatedRules:   fd.fertility.activatedRules,
-        aggregation:      fd.fertility.aggregation,
-        explanation:      fd.fertility.explanation,
-        explanationList:  fd.fertility.explanationList,
-      };
-      rootcropResults = fd.rootcrops || [];
-      allCropsRanked  = fd.allCropsRanked || [];
-      fertRecommKey   = fd.fertilizerRecommendationKey || 'fert-moderate-general';
-      confidenceData  = fd.confidence;
+    if (!fuzzyRes.data.success) {
+      throw new Error(fuzzyRes.data.message || 'Fuzzy service returned an unsuccessful response.');
     }
+
+    const fd = fuzzyRes.data;
+    if (!fd.fertility || !fd.confidence) {
+      throw new Error('Fuzzy service response is missing fertility or confidence data.');
+    }
+    fuzzyResult = {
+      fertilityClass:   fd.fertility.classification,
+      fertilityScore:   fd.fertility.score,
+      confidence:       fd.confidence.score,
+      confidenceLevel:  fd.confidence.level,
+      phFuzzySet:       fd.fertility.phFuzzySet,
+      moistureFuzzySet: fd.fertility.moistureFuzzySet,
+      activatedRules:   fd.fertility.activatedRules,
+      aggregation:      fd.fertility.aggregation,
+      explanation:      fd.fertility.explanation,
+      explanationList:  fd.fertility.explanationList,
+    };
+    rootcropResults = fd.cropRecommendations?.length
+      ? fd.cropRecommendations
+      : fd.rootcrops || [];
+    allCropsRanked  = fd.allCropsRanked || [];
+    fertRecommKey   = fd.fertilizerRecommendationKey || 'fert-moderate-general';
+    confidenceData  = fd.confidence;
+    serviceStatus.fuzzyEngine = { status: 'online', message: null };
   } catch (err) {
     console.error('[Orchestrator] Fuzzy engine error:', err.message);
+    serviceStatus.fuzzyEngine = {
+      status: 'offline',
+      message: err.response?.status === 401
+        ? 'Service API key was rejected. Match SERVICE_API_KEY across the API and both Python services.'
+        : err.response?.data?.message || err.message,
+    };
     // Fallback fertility result
     fuzzyResult = {
       fertilityClass: 'moderate',
@@ -250,6 +276,7 @@ async function runAssessment(params) {
     },
 
     imageFeatures,
+    serviceStatus,
     qualityWarning,
 
     sensorData: {
@@ -267,8 +294,10 @@ async function runAssessment(params) {
       visualCondition: derivedInputs.visual_condition || 'moderate',
     },
 
+    activeCropCount: crops.length,
     fuzzyResult,
     rootcropResults,
+    cropRecommendations: rootcropResults,
     allCropsRanked,
     fertilizerRecommendationKey:  fertRecommKey,
     fertilizerRecommendationData: fertRecommendationData,

@@ -86,6 +86,14 @@ def health():
         "version": "1.0.0",
     })
 
+@app.route('/ready', methods=['GET'])
+def ready():
+    return jsonify({
+        "success": True,
+        "service": "SoilSense Image Processing",
+        "ready": True,
+    })
+
 
 # ─── Main Analysis Endpoint ───────────────────────────────────────────────────
 @app.route('/analyze', methods=['POST'])

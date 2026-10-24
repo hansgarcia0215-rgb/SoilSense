@@ -56,6 +56,7 @@ const FUZZY_ENGINE_URL = serviceUrl(
   'https://soilsense-fuzzy-engine.onrender.com',
   'http://localhost:5002'
 );
+const SERVICE_API_KEY = process.env.SERVICE_API_KEY;
 
 // ─── Security Headers ─────────────────────────────────────────
 // Helmet adds important HTTP security headers automatically
@@ -144,7 +145,10 @@ app.get('/api/health/services', async (req, res) => {
   const axios = require('axios');
   const check = async (url, name, expectedService) => {
     try {
-      const response = await axios.get(`${url}/health`, { timeout: 60000 });
+      const response = await axios.get(`${url}/ready`, {
+        timeout: 60000,
+        headers: SERVICE_API_KEY ? { 'X-Service-Api-Key': SERVICE_API_KEY } : {},
+      });
       const service = response.data?.service;
       if (service !== expectedService) {
         return {
@@ -169,7 +173,11 @@ app.get('/api/health/services', async (req, res) => {
         status: 'offline',
         url,
         message: err.response?.status
-          ? `Health check returned HTTP ${err.response.status}.`
+          ? err.response.status === 401
+            ? 'Service API key was rejected. Set the same SERVICE_API_KEY on the API and both Python services.'
+            : err.response.status === 503
+              ? err.response.data?.message || 'Service is not configured.'
+              : `Readiness check returned HTTP ${err.response.status}.`
           : 'Health check could not reach the service.',
       };
     }
