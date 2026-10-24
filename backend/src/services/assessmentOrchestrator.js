@@ -23,6 +23,7 @@
 const axios  = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { db, storage } = require('../firebase/admin');
+const { getAssessmentImageUrl } = require('../utils/assessmentImage');
 const { generateAssessmentId } = require('../utils/assessmentId');
 const { MUNICIPALITY, PROVINCE, REGION, isWithinRoxas } = require('../utils/roxasConfig');
 
@@ -86,9 +87,10 @@ async function runAssessment(params) {
       resumable: false,
     });
     imageUploaded = true;
+    imageUrl = await getAssessmentImageUrl({ imagePath });
   } catch (err) {
-    console.error('[Orchestrator] Storage upload failed:', err.message);
-    // Continue without a stored image — we can still process the uploaded buffer
+    console.error('[Orchestrator] Storage upload or download URL setup failed:', err.message);
+    // Continue processing; image URLs can be repaired when the assessment is read.
   }
 
   // ── Step 2: Call image processing service ─────────────────────────────────

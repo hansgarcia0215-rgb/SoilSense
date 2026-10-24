@@ -1,6 +1,5 @@
 const { storage } = require('../firebase/admin');
-
-const IMAGE_URL_EXPIRATION_MS = 60 * 60 * 1000;
+const { randomUUID } = require('crypto');
 
 async function getAssessmentImageUrl(imageData = {}) {
   if (!imageData || !imageData.imagePath) {
@@ -11,12 +10,32 @@ async function getAssessmentImageUrl(imageData = {}) {
     throw new Error('Assessment image path is invalid.');
   }
 
-  const [url] = await storage.bucket().file(imageData.imagePath).getSignedUrl({
-    action: 'read',
-    expires: Date.now() + IMAGE_URL_EXPIRATION_MS,
-  });
+  const bucket = storage.bucket();
+  const file = bucket.file(imageData.imagePath);
+  let metadata;
+  try {
+    [metadata] = await file.getMetadata();
+  } catch (error) {
+    if (error.code === 404) {
+      console.warn(`[AssessmentImage] Stored image not found: ${imageData.imagePath}`);
+      return null;
+    }
+    throw error;
+  }
+  let downloadToken = metadata.metadata?.firebaseStorageDownloadTokens
+    ?.split(',')[0];
 
-  return url;
+  if (!downloadToken) {
+    downloadToken = randomUUID();
+    await file.setMetadata({
+      metadata: {
+        ...metadata.metadata,
+        firebaseStorageDownloadTokens: downloadToken,
+      },
+    });
+  }
+
+  return `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket.name)}/o/${encodeURIComponent(imageData.imagePath)}?alt=media&token=${downloadToken}`;
 }
 
 module.exports = { getAssessmentImageUrl };
