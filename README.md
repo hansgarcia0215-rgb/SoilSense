@@ -145,9 +145,13 @@ dependencies, builds the Vite app, serves `frontend/dist/`, and routes React
 page URLs back to the app so direct links and refreshes work.
 
 In the Vercel project settings, add the frontend variables from
-`frontend/.env.example`. Set `VITE_API_BASE_URL` to the deployed backend API
-base URL (for example, `https://your-backend.example.com/api`) and configure
-the backend to allow requests from the Vercel domain. Redeploy after changing
+`frontend/.env.example` with **Config** visibility, not **Secret**. Vite
+embeds variables prefixed with `VITE_` in browser assets, so they must not
+contain private credentials. Set `VITE_API_BASE_URL` to the deployed backend
+API base URL (for example, `https://your-backend.example.com/api`) and
+configure the backend to allow requests from the Vercel domain. Keep Firebase
+Admin service-account credentials and other private values only in the
+backend's environment, marked Secret where supported. Redeploy after changing
 environment variables. Deploying the frontend alone does not deploy the
 backend or its Firebase Admin credentials.
 
