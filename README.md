@@ -148,12 +148,32 @@ In the Vercel project settings, add the frontend variables from
 `frontend/.env.example` with **Config** visibility, not **Secret**. Vite
 embeds variables prefixed with `VITE_` in browser assets, so they must not
 contain private credentials. Set `VITE_API_BASE_URL` to the deployed backend
-API base URL (for example, `https://your-backend.example.com/api`) and
-configure the backend to allow requests from the Vercel domain. Keep Firebase
-Admin service-account credentials and other private values only in the
-backend's environment, marked Secret where supported. Redeploy after changing
-environment variables. Deploying the frontend alone does not deploy the
-backend or its Firebase Admin credentials.
+API base URL (for example, `https://soilsense-api.onrender.com/api`) and
+configure the backend to allow requests from the Vercel domain. Redeploy after
+changing environment variables. Deploying the frontend alone does not deploy
+the backend or its Firebase Admin credentials.
+
+### Deploying the Backend to Render
+
+1. In Render, create a new **Blueprint** from this repository and select the
+   `main` branch. The root `render.yaml` defines the Node API service and its
+   `/api/health` health check.
+2. Enter the requested environment values in Render. Use the Firebase Admin
+   service-account `project_id`, `client_email`, and `private_key`, plus a
+   strong random `JWT_SECRET` and an `ESP32_DEVICE_API_KEY`. Keep these values
+   in Render only; never commit them or paste them into chat. If the service
+   account key was shared or exposed, revoke it and generate a replacement
+   before deployment.
+3. Wait for Render to finish deploying. Open
+   `https://<your-render-service>.onrender.com/api/health`; it should return a
+   JSON response with `"status": "running"`.
+4. In Vercel project settings, set `VITE_API_BASE_URL` to
+   `https://<your-render-service>.onrender.com/api` with **Config** visibility.
+   The `render.yaml` CORS setting allows the production Vercel domain shown
+   above. If that domain changes, update `ALLOWED_ORIGINS` in Render to match.
+5. Redeploy the Vercel frontend so the new API URL is built into its assets.
+   The backend's Python image-processing and fuzzy-engine services must also
+   be deployed and configured separately for soil assessments to run.
 
 ---
 
