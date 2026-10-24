@@ -27,14 +27,14 @@ services:
       - key: ESP32_DEVICE_API_KEY
         sync: false
       - key: IMAGE_PROCESSING_URL
-        value: https://soilsense-image-processing.onrender.com
+        value: https://soilsense-image-processor.onrender.com
       - key: FUZZY_ENGINE_URL
         value: https://soilsense-fuzzy-engine.onrender.com
       - key: SERVICE_API_KEY
         sync: false
 
   - type: web
-    name: soilsense-image-processing
+    name: soilsense-image-processor
     runtime: python
     plan: free
     rootDir: image-processing
