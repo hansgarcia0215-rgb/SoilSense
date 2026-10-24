@@ -76,6 +76,7 @@ async function runAssessment(params) {
   const imageId   = uuidv4();
   const imagePath = `soil-images/${userId}/${imageId}.${mimetype.split('/')[1] || 'jpg'}`;
   let   imageUrl  = null;
+  let   imageUploaded = false;
 
   try {
     const bucket = storage.bucket();
@@ -84,12 +85,10 @@ async function runAssessment(params) {
       metadata: { contentType: mimetype },
       resumable: false,
     });
-    // Make the file publicly readable (for image display in the UI)
-    await file.makePublic();
-    imageUrl = `https://storage.googleapis.com/${bucket.name}/${imagePath}`;
+    imageUploaded = true;
   } catch (err) {
     console.error('[Orchestrator] Storage upload failed:', err.message);
-    // Continue without cloud URL — we can still process the image
+    // Continue without a stored image — we can still process the uploaded buffer
   }
 
   // ── Step 2: Call image processing service ─────────────────────────────────
@@ -272,7 +271,7 @@ async function runAssessment(params) {
     imageData: {
       imageId,
       imageUrl,
-      imagePath,
+      imagePath: imageUploaded ? imagePath : null,
     },
 
     imageFeatures,

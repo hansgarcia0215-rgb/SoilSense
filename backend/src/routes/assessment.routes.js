@@ -10,6 +10,7 @@ const { authenticate }          = require('../middleware/auth.middleware');
 const { requireRole }           = require('../middleware/role.middleware');
 const { handleSoilImageUpload } = require('../middleware/upload.middleware');
 const { validate }              = require('../middleware/validate.middleware');
+const { getAssessmentImageUrl } = require('../utils/assessmentImage');
 const { createError }           = require('../utils/errorHandler');
 
 // All assessment routes require authentication
@@ -93,7 +94,7 @@ router.get('/', async (req, res, next) => {
         fertilityClass:   d.fuzzyResult?.fertilityClass || null,
         fertilityScore:   d.fuzzyResult?.fertilityScore || null,
         bestRootcrop:     d.rootcropResults?.find(r => r.rank === 1)?.cropName || null,
-        imageUrl:         d.imageData?.imageUrl || null,
+        imageData:        d.imageData || {},
         hasLabValidation: !!d.labValidation?.isValidated,
       };
     });
@@ -107,6 +108,12 @@ router.get('/', async (req, res, next) => {
 
     // Apply limit after sorting
     data = data.slice(0, limit);
+
+    data = await Promise.all(data.map(async assessment => {
+      const imageUrl = await getAssessmentImageUrl(assessment.imageData);
+      const { imageData, ...summary } = assessment;
+      return { ...summary, imageUrl };
+    }));
 
     res.json({ success: true, total: data.length, data });
   } catch (err) {
@@ -132,7 +139,16 @@ router.get('/:id', async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
     }
 
-    res.json({ success: true, data });
+    res.json({
+      success: true,
+      data: {
+        ...data,
+        imageData: {
+          ...data.imageData,
+          imageUrl: await getAssessmentImageUrl(data.imageData),
+        },
+      },
+    });
   } catch (err) {
     next(err);
   }
