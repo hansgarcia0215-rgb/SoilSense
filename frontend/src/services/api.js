@@ -1,50 +1,51 @@
 /**
- * api.js — Axios instance and request/response interceptors
+ * api.js — Axios instance with Firebase Auth token interceptor
  *
- * In development the Vite proxy forwards /api/* to localhost:3001.
- * We use a relative baseURL ('/api') so requests go through the proxy.
- * In production set VITE_API_BASE_URL to the deployed backend URL + /api.
+ * Gets a fresh Firebase ID token on every request (auto-refreshes).
+ * Falls back to localStorage token if Firebase user not loaded yet.
  */
 
 import axios from 'axios';
-
-// Use relative /api in dev (goes through Vite proxy → localhost:3001/api)
-// Use absolute URL in production (set VITE_API_BASE_URL in .env)
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+import { auth } from './firebase';
 
 const api = axios.create({
-  baseURL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// ─── Request Interceptor ──────────────────────────────────────
-// Fetch the Firebase ID token and attach it to every outgoing request.
-// Dynamic import prevents a circular dependency at module load time.
+// ─── Request interceptor — attach Firebase ID token ──────────
 api.interceptors.request.use(
   async (config) => {
     try {
-      const { auth } = await import('./firebase');
-      const token = await auth.currentUser?.getIdToken();
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    } catch (_) {}
+      // Try to get a fresh Firebase token first
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdToken();
+        config.headers.Authorization = `Bearer ${token}`;
+        localStorage.setItem('soilsense_token', token);
+        return config;
+      }
+    } catch {
+      // Firebase not ready — fall through to localStorage
+    }
+
+    // Fallback: use cached token from localStorage
+    const cached = localStorage.getItem('soilsense_token');
+    if (cached) {
+      config.headers.Authorization = `Bearer ${cached}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ─── Response Interceptor ─────────────────────────────────────
-// On 401, sign out from Firebase, clear the local cache, and redirect.
+// ─── Response interceptor — handle 401 ───────────────────────
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     if (error.response?.status === 401) {
-      try {
-        const { auth } = await import('./firebase');
-        await auth.signOut();
-      } catch (_) {}
+      localStorage.removeItem('soilsense_token');
       localStorage.removeItem('soilsense_user');
       window.location.href = '/login';
     }

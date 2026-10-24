@@ -1,28 +1,14 @@
 /**
- * auth.middleware.js — Firebase Admin token verification middleware
+ * auth.middleware.js — Firebase ID token verification
  *
- * What it does:
- *   Reads the Firebase ID token from the Authorization header,
- *   verifies it with the Admin SDK, fetches the user's role from
- *   Firestore, and attaches the user object to req.user.
- *
- * Why it exists:
- *   Every protected route needs to know who is making the request.
- *   This middleware handles that check in one place.
- *
- * How to use:
- *   const { authenticate } = require('../middleware/auth.middleware');
- *   router.get('/protected', authenticate, (req, res) => { ... });
+ * Verifies the Firebase ID token from the Authorization header.
+ * Fetches the user's extended profile (role, barangay, etc.) from
+ * Firestore and attaches it to req.user.
  */
 
 const { auth, db } = require('../firebase/admin');
 const { createError } = require('../utils/errorHandler');
 
-/**
- * Middleware: verify Firebase ID token and attach user to request.
- * Rejects with 401 if token is missing, invalid, or expired.
- * Rejects with 403 if the account is disabled.
- */
 async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
 
@@ -33,25 +19,27 @@ async function authenticate(req, res, next) {
   const token = authHeader.split(' ')[1];
 
   try {
+    // Verify Firebase ID token
     const decoded = await auth.verifyIdToken(token);
 
-    // Fetch role and active status from Firestore — not embedded in the token
-    const userDoc = await db.collection('users').doc(decoded.uid).get();
-    if (!userDoc.exists) {
-      return next(createError(401, 'PROFILE_NOT_FOUND', 'User profile not found. Please complete registration.'));
-    }
-
-    const profile = userDoc.data();
-    if (!profile.isActive) {
-      return next(createError(403, 'ACCOUNT_DISABLED', 'Your account has been disabled.'));
+    // Fetch extended profile from Firestore (for role, barangay, etc.)
+    let role = 'farmer';
+    try {
+      const userDoc = await db.collection('users').doc(decoded.uid).get();
+      if (userDoc.exists) {
+        role = userDoc.data().role || 'farmer';
+      }
+    } catch {
+      // Profile not found yet — use default role
     }
 
     req.user = {
       uid:         decoded.uid,
       email:       decoded.email,
-      role:        profile.role,
-      displayName: profile.displayName,
+      displayName: decoded.name || decoded.display_name || '',
+      role,
     };
+
     next();
   } catch (err) {
     if (err.code === 'auth/id-token-expired') {

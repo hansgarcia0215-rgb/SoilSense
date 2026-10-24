@@ -1,10 +1,9 @@
 /**
- * auth.controller.js — Authentication request handlers
+ * auth.controller.js — Firebase Auth profile management
  *
- * Handles: sync-profile (upsert after Firebase sign-in), get-profile, update-profile
- *
- * Registration and login are handled entirely by Firebase Authentication.
- * The backend only manages the extended Firestore profile (role, barangay, etc.).
+ * Login and registration are handled by Firebase Auth client-side.
+ * This controller manages the extended profile stored in Firestore
+ * (role, barangay, municipality, preferredDeviceId, etc.)
  */
 
 const { db }  = require('../firebase/admin');
@@ -15,77 +14,103 @@ const { MUNICIPALITY, PROVINCE } = require('../utils/roxasConfig');
 
 /**
  * POST /api/auth/sync-profile
- * Called by the frontend immediately after Firebase sign-in or registration
- * to upsert the extended Firestore profile.
  *
- * Body: { displayName?, barangay?, municipality?, province?, photoURL?, upsertOnly? }
- *   - upsertOnly: when true (Google sign-in of existing user), only supplied
- *     fields are updated and role/isActive are never overwritten.
+ * Called by the frontend immediately after:
+ *   - Firebase Email/Password registration
+ *   - Google sign-in (first time)
+ *
+ * Creates or updates the Firestore user document with extended fields
+ * that Firebase Auth doesn't store (role, barangay, etc.)
  */
 async function syncProfile(req, res, next) {
   try {
     const uid = req.user.uid;
-    const { displayName, barangay, municipality, province, photoURL, upsertOnly } = req.body;
+    const {
+      displayName, email, role, barangay,
+      municipality, province, photoURL,
+    } = req.body;
 
+    // Check if user doc already exists
     const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
+    const existing = await userRef.get();
 
-    if (!userDoc.exists) {
-      // First sign-in — create the full profile document
+    if (existing.exists) {
+      // Existing user — update only non-sensitive fields
+      const update = { updatedAt: new Date() };
+      if (displayName) update.displayName = displayName.trim();
+      if (barangay !== undefined) update.barangay = barangay;
+      await userRef.update(update);
+    } else {
+      // New user — create full profile document
       const newUser = {
         uid,
-        displayName: displayName?.trim() || req.user.displayName || '',
-        email:       req.user.email || '',
-        photoURL:    photoURL || '',
-        role:        'farmer',
-        barangay:    barangay?.trim() || '',
+        displayName:  (displayName || '').trim(),
+        email:        email || req.user.email || '',
+        role:         role || 'farmer',
+        barangay:     barangay || '',
         municipality: municipality || MUNICIPALITY,
-        province:     province     || PROVINCE,
-        isActive:    true,
-        createdAt:   new Date(),
-        updatedAt:   new Date(),
+        province:     province    || PROVINCE,
+        photoURL:     photoURL || null,
+        isActive:     true,
+        createdAt:    new Date(),
+        updatedAt:    new Date(),
       };
       await userRef.set(newUser);
-      return res.status(201).json({ success: true, user: safeUser(newUser) });
     }
 
-    // Existing user — update only the supplied fields
-    const update = { updatedAt: new Date() };
-    if (displayName !== undefined) update.displayName = displayName.trim();
-    if (barangay    !== undefined) update.barangay    = barangay.trim();
-    if (municipality !== undefined) update.municipality = municipality;
-    if (province    !== undefined) update.province    = province;
-    if (photoURL    !== undefined) update.photoURL    = photoURL;
-
-    // upsertOnly mode (Google existing user): never touch role or isActive
-    if (!upsertOnly && req.body.role) {
-      // Role changes are admin-only; ignore any role supplied here
-    }
-
-    await userRef.update(update);
     const updatedDoc = await userRef.get();
-    return res.json({ success: true, user: safeUser(updatedDoc.data()) });
-  } catch (err) { next(err); }
+    const userData   = updatedDoc.data();
+    // Never return passwordHash (legacy) if it somehow exists
+    const { passwordHash, ...safeUser } = userData;
+
+    res.status(existing.exists ? 200 : 201).json({
+      success: true,
+      user:    safeUser,
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 // ─── Get Profile ─────────────────────────────────────────────
 
+/**
+ * GET /api/auth/me
+ * Returns the current user's Firestore profile.
+ */
 async function getProfile(req, res, next) {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
+
     if (!userDoc.exists) {
-      return next(createError(404, 'USER_NOT_FOUND', 'User profile not found.'));
+      // Profile doesn't exist yet — return basic info from Firebase token
+      return res.json({
+        success: true,
+        user: {
+          uid:         req.user.uid,
+          email:       req.user.email,
+          displayName: req.user.displayName,
+          role:        'farmer',
+          barangay:    '',
+          municipality: MUNICIPALITY,
+          province:    PROVINCE,
+          isActive:    true,
+        },
+      });
     }
-    res.json({ success: true, user: safeUser(userDoc.data()) });
-  } catch (err) { next(err); }
+
+    const { passwordHash, ...safeUser } = userDoc.data();
+    res.json({ success: true, user: safeUser });
+  } catch (err) {
+    next(err);
+  }
 }
 
 // ─── Update Profile ───────────────────────────────────────────
 
 /**
  * PATCH /api/auth/me
- * Body: { displayName?, barangay?, preferredDeviceId? }
- * Persists safe profile fields. Email, role, isActive cannot change here.
+ * Updates safe profile fields in Firestore.
  */
 async function updateProfile(req, res, next) {
   try {
@@ -101,28 +126,18 @@ async function updateProfile(req, res, next) {
       }
       update.displayName = trimmed;
     }
-
-    if (barangay !== undefined) {
-      update.barangay = barangay.trim();
-    }
-
-    if (preferredDeviceId !== undefined) {
-      update.preferredDeviceId = String(preferredDeviceId).trim().slice(0, 50);
-    }
+    if (barangay          !== undefined) update.barangay          = barangay.trim();
+    if (preferredDeviceId !== undefined) update.preferredDeviceId = String(preferredDeviceId).trim().slice(0, 50);
 
     await db.collection('users').doc(uid).update(update);
 
     const updatedDoc = await db.collection('users').doc(uid).get();
-    res.json({ success: true, user: safeUser(updatedDoc.data()) });
-  } catch (err) { next(err); }
-}
+    const { passwordHash, ...safeUser } = updatedDoc.data();
 
-// ─── Helpers ─────────────────────────────────────────────────
-
-function safeUser(user) {
-  // Strip any legacy passwordHash field that may exist in Firestore documents
-  const { passwordHash, ...safe } = user;
-  return safe;
+    res.json({ success: true, user: safeUser });
+  } catch (err) {
+    next(err);
+  }
 }
 
 module.exports = { syncProfile, getProfile, updateProfile };

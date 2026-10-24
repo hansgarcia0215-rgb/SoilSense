@@ -1,113 +1,145 @@
 /**
- * authService.js — Authentication helpers using Firebase Authentication
+ * authService.js — Firebase Authentication service
+ *
+ * All auth is now handled by Firebase Authentication.
+ * After Firebase creates/verifies the user, we sync the extended
+ * profile (role, barangay, etc.) to Firestore via the backend.
  */
 
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
-  updateProfile as firebaseUpdateProfile,
   signOut,
+  updateProfile,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 import api from './api';
 
 const authService = {
-  /**
-   * Register a new farmer account.
-   * Creates the Firebase Auth user, sets displayName, then upserts the
-   * extended Firestore profile via /auth/sync-profile.
-   */
-  async register({ displayName, email, password, barangay, municipality, province }) {
-    const { user } = await createUserWithEmailAndPassword(auth, email, password);
-    await firebaseUpdateProfile(user, { displayName });
-    await api.post('/auth/sync-profile', {
+
+  // ─── Register with Email/Password ────────────────────────────
+  async register({ displayName, email, password, role, barangay, municipality, province }) {
+    // 1. Create Firebase Auth account
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    const user       = credential.user;
+
+    // 2. Set displayName on Firebase profile
+    await updateProfile(user, { displayName });
+
+    // 3. Get ID token for backend call
+    const token = await user.getIdToken();
+    localStorage.setItem('soilsense_token', token);
+
+    // 4. Sync extended profile to Firestore via backend
+    const res = await api.post('/auth/sync-profile', {
+      uid:          user.uid,
       displayName,
-      barangay,
-      municipality,
-      province,
-      role: 'farmer',
+      email:        user.email,
+      role:         role || 'farmer',
+      barangay:     barangay || '',
+      municipality: municipality || 'Roxas',
+      province:     province     || 'Oriental Mindoro',
     });
-    return { user };
+
+    const profile = res.data.user;
+    localStorage.setItem('soilsense_user', JSON.stringify(profile));
+    return { user: profile, token };
   },
 
-  /**
-   * Sign in with email and password.
-   * The Firebase token is attached per-request by the api.js interceptor.
-   * Fetches the Firestore profile and returns it.
-   */
+  // ─── Login with Email/Password ────────────────────────────────
   async login(email, password) {
-    await signInWithEmailAndPassword(auth, email, password);
-    const response = await api.get('/auth/me');
-    return { user: response.data.user };
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const token      = await credential.user.getIdToken();
+    localStorage.setItem('soilsense_token', token);
+
+    // Fetch extended profile from backend
+    const res = await api.get('/auth/me');
+    const profile = res.data.user;
+    localStorage.setItem('soilsense_user', JSON.stringify(profile));
+    return { user: profile, token };
   },
 
-  /**
-   * Sign in with Google popup.
-   * Upserts the Firestore profile with upsertOnly so existing roles are preserved.
-   */
+  // ─── Login with Google ────────────────────────────────────────
   async loginWithGoogle() {
-    const result = await signInWithPopup(auth, googleProvider);
-    const { displayName, email, photoURL } = result.user;
-    await api.post('/auth/sync-profile', {
-      displayName,
-      email,
-      photoURL,
-      upsertOnly: true,
+    const credential = await signInWithPopup(auth, googleProvider);
+    const firebaseUser = credential.user;
+    const token        = await firebaseUser.getIdToken();
+    localStorage.setItem('soilsense_token', token);
+
+    // Sync profile to Firestore (creates doc if first-time Google login)
+    const res = await api.post('/auth/sync-profile', {
+      uid:         firebaseUser.uid,
+      displayName: firebaseUser.displayName || 'User',
+      email:       firebaseUser.email,
+      role:        'farmer',          // default role for Google sign-in
+      barangay:    '',
+      municipality:'Roxas',
+      province:    'Oriental Mindoro',
+      photoURL:    firebaseUser.photoURL || null,
     });
-    const response = await api.get('/auth/me');
-    return { user: response.data.user };
+
+    const profile = res.data.user;
+    localStorage.setItem('soilsense_user', JSON.stringify(profile));
+    return { user: profile, token };
   },
 
-  /**
-   * Sign out from Firebase and clear local user cache.
-   */
+  // ─── Logout ───────────────────────────────────────────────────
   async logout() {
     await signOut(auth);
+    localStorage.removeItem('soilsense_token');
     localStorage.removeItem('soilsense_user');
   },
 
-  /**
-   * Returns a fresh Firebase ID token (auto-refreshed if expired).
-   */
+  // ─── Password Reset ───────────────────────────────────────────
+  async sendPasswordReset(email) {
+    await sendPasswordResetEmail(auth, email);
+  },
+
+  // ─── Get fresh ID token (auto-refreshes if expired) ──────────
   async getToken() {
-    return auth.currentUser?.getIdToken() ?? null;
+    const user = auth.currentUser;
+    if (!user) return null;
+    const token = await user.getIdToken();
+    localStorage.setItem('soilsense_token', token);
+    return token;
   },
 
-  /**
-   * Fetch the full Firestore profile for the current user.
-   */
-  async getProfile() {
-    const response = await api.get('/auth/me');
-    return response.data;
-  },
-
-  /**
-   * Persist profile changes to Firestore via PATCH /api/auth/me.
-   * @param {{ displayName?, barangay?, preferredDeviceId? }} fields
-   */
-  async updateProfile(fields) {
-    const response = await api.patch('/auth/me', fields);
-    if (response.data.user) {
-      localStorage.setItem('soilsense_user', JSON.stringify(response.data.user));
-    }
-    return response.data;
-  },
-
-  /** Read the cached user from localStorage (set by updateStoredUser). */
+  // ─── Helpers ─────────────────────────────────────────────────
   getCurrentUser() {
     try {
-      const user = localStorage.getItem('soilsense_user');
-      return user ? JSON.parse(user) : null;
+      const u = localStorage.getItem('soilsense_user');
+      return u ? JSON.parse(u) : null;
     } catch { return null; }
   },
 
-  /** Returns true when a Firebase user is currently signed in. */
   isAuthenticated() {
-    return !!auth.currentUser;
+    return !!auth.currentUser || !!localStorage.getItem('soilsense_token');
   },
 
-  /** Write the user object to localStorage so it survives page refresh. */
+  async getProfile() {
+    const res = await api.get('/auth/me');
+    return res.data;
+  },
+
+  async updateProfile(fields) {
+    const res = await api.patch('/auth/me', fields);
+    if (res.data.user) {
+      localStorage.setItem('soilsense_user', JSON.stringify(res.data.user));
+    }
+    return res.data;
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    // Firebase handles password change via reauthenticate + updatePassword
+    // For simplicity, use sendPasswordResetEmail flow
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+    await sendPasswordResetEmail(auth, user.email);
+    return { message: 'Password reset email sent to ' + user.email };
+  },
+
   updateStoredUser(updatedUser) {
     localStorage.setItem('soilsense_user', JSON.stringify(updatedUser));
   },
