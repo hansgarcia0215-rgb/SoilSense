@@ -142,16 +142,16 @@ need to be deployed separately for login and soil assessments to work.
 Import the repository into Vercel and keep the project root directory set to
 `./` (the repository root). The root `vercel.json` installs frontend
 dependencies, builds the Vite app, serves `frontend/dist/`, and routes React
-page URLs back to the app so direct links and refreshes work.
+page URLs back to the app so direct links and refreshes work. Requests under
+`/api/*` are proxied to the Render backend before the frontend fallback.
 
 In the Vercel project settings, add the frontend variables from
 `frontend/.env.example` with **Config** visibility, not **Secret**. Vite
 embeds variables prefixed with `VITE_` in browser assets, so they must not
-contain private credentials. Set `VITE_API_BASE_URL` to the deployed backend
-API base URL (for example, `https://soilsense-api.onrender.com/api`) and
-configure the backend to allow requests from the Vercel domain. Redeploy after
-changing environment variables. Deploying the frontend alone does not deploy
-the backend or its Firebase Admin credentials.
+contain private credentials. Keep `VITE_API_BASE_URL` set to `/api`; Vercel
+proxies those requests to the Render backend. Redeploy after changing
+environment variables. Deploying the frontend alone does not deploy the
+backend or its Firebase Admin credentials.
 
 ### Deploying the Backend to Render
 
@@ -167,11 +167,12 @@ the backend or its Firebase Admin credentials.
 3. Wait for Render to finish deploying. Open
    `https://<your-render-service>.onrender.com/api/health`; it should return a
    JSON response with `"status": "running"`.
-4. In Vercel project settings, set `VITE_API_BASE_URL` to
-   `https://<your-render-service>.onrender.com/api` with **Config** visibility.
-   The `render.yaml` CORS setting allows the production Vercel domain shown
-   above. If that domain changes, update `ALLOWED_ORIGINS` in Render to match.
-5. Redeploy the Vercel frontend so the new API URL is built into its assets.
+4. Confirm Vercel's `VITE_API_BASE_URL` is `/api` with **Config** visibility.
+   The root `vercel.json` proxies API requests to the Render URL. The
+   `render.yaml` CORS setting allows the production Vercel domain shown above.
+   If either domain changes, update the proxy destination and
+   `ALLOWED_ORIGINS` respectively.
+5. Redeploy the Vercel frontend to activate the API proxy.
    The backend's Python image-processing and fuzzy-engine services must also
    be deployed and configured separately for soil assessments to run.
 
