@@ -24,6 +24,7 @@ const axios  = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { db, storage } = require('../firebase/admin');
 const { generateAssessmentId } = require('../utils/assessmentId');
+const { createError } = require('../utils/errorHandler');
 const { MUNICIPALITY, PROVINCE, REGION, isWithinRoxas } = require('../utils/roxasConfig');
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -75,7 +76,6 @@ async function runAssessment(params) {
   // ── Step 1: Upload image to Firebase Storage ──────────────────────────────
   const imageId   = uuidv4();
   const imagePath = `soil-images/${userId}/${imageId}.${mimetype.split('/')[1] || 'jpg'}`;
-  let   imageUrl  = null;
   let   imageUploaded = false;
 
   try {
@@ -85,10 +85,14 @@ async function runAssessment(params) {
       metadata: { contentType: mimetype },
       resumable: false,
     });
+    const [metadata] = await file.getMetadata();
+    if (!metadata.contentType?.startsWith('image/') || Number(metadata.size) <= 0) {
+      throw new Error('Uploaded file is missing or is not an image.');
+    }
     imageUploaded = true;
   } catch (err) {
     console.error('[Orchestrator] Storage upload failed:', err.message);
-    // Continue processing; the assessment will record that no stored image is available.
+    throw createError(503, 'IMAGE_STORAGE_FAILED', 'The soil photo could not be saved. Please try again later.');
   }
 
   // ── Step 2: Call image processing service ─────────────────────────────────
@@ -270,7 +274,6 @@ async function runAssessment(params) {
 
     imageData: {
       imageId,
-      imageUrl,
       imagePath: imageUploaded ? imagePath : null,
     },
 

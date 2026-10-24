@@ -10,6 +10,7 @@ const { authenticate }          = require('../middleware/auth.middleware');
 const { requireRole }           = require('../middleware/role.middleware');
 const { handleSoilImageUpload } = require('../middleware/upload.middleware');
 const { validate }              = require('../middleware/validate.middleware');
+const { findAssessmentImage }   = require('../utils/assessmentStorage');
 const { createError }           = require('../utils/errorHandler');
 
 // All assessment routes require authentication
@@ -159,16 +160,11 @@ router.get('/:id/image', async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'No stored image is available for this assessment.' });
     }
 
-    const file = storage.bucket().file(imagePath);
-    let metadata;
-    try {
-      [metadata] = await file.getMetadata();
-    } catch (err) {
-      if (err.code === 404) {
-        return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'The stored assessment image was not found.' });
-      }
-      throw err;
+    const storedImage = await findAssessmentImage(storage, imagePath);
+    if (!storedImage) {
+      return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'The stored assessment image was not found in the configured Firebase Storage buckets.' });
     }
+    const { file, metadata } = storedImage;
 
     if (!metadata.contentType?.startsWith('image/')) {
       return res.status(415).json({ success: false, error: 'INVALID_IMAGE', message: 'The stored assessment file is not an image.' });
