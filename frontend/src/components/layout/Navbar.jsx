@@ -4,28 +4,29 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Bell, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, Bell, Settings, LogOut, ChevronDown, Inbox } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import AppLogo from '../common/AppLogo';
 
 const ROLE_LABELS = {
   farmer:           'Farmer',
   extension_worker: 'Extension Worker',
-  researcher:       'Researcher',
-  admin:            'Administrator',
+  researcher:       'System Administrator',
+  admin:            'System Administrator',
 };
 
 const ROLE_COLORS = {
   farmer:           'from-green-500 to-emerald-600',
-  extension_worker: 'from-blue-500 to-blue-600',
-  researcher:       'from-purple-500 to-purple-600',
-  admin:            'from-rose-500 to-rose-600',
+  extension_worker: 'from-soil-400 to-soil-600',
+  researcher:       'from-[#8b7ba8] to-[#6b5f8a]',
+  admin:            'from-[#a8402f] to-[#7f2d20]',
 };
 
 export default function Navbar({ onMenuClick, sidebarOpen }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -33,6 +34,24 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Close popovers with Escape and return focus to their trigger buttons
+  useEffect(() => {
+    if (!showUserMenu && !showNotifications) return;
+    const handleKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (showUserMenu) {
+        setShowUserMenu(false);
+        document.getElementById('user-menu-trigger')?.focus();
+      }
+      if (showNotifications) {
+        setShowNotifications(false);
+        document.getElementById('notifications-trigger')?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [showUserMenu, showNotifications]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -45,8 +64,8 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
         sticky top-0 z-30 px-4 py-3 flex items-center justify-between
         transition-all duration-300
         ${scrolled
-          ? 'bg-white/85 backdrop-blur-md border-b border-gray-200/60 shadow-sm'
-          : 'bg-white/70 backdrop-blur-sm border-b border-transparent'}
+          ? 'bg-cream-card/90 backdrop-blur-md border-b border-cream-border shadow-sm'
+          : 'bg-cream-card/75 backdrop-blur-sm border-b border-transparent'}
       `}
     >
       {/* ── Left ── */}
@@ -55,7 +74,7 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
         <button
           onClick={onMenuClick}
           className="lg:hidden relative w-9 h-9 flex items-center justify-center rounded-xl
-                     hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                     hover:bg-cream-sand/70 active:bg-cream-deep transition-colors"
           aria-label="Toggle menu"
         >
           <div className="w-5 flex flex-col gap-1 transition-all duration-300">
@@ -76,26 +95,54 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
 
       {/* ── Right ── */}
       <div className="flex items-center gap-1.5">
-        {/* Notification bell */}
-        <button
-          className="relative w-9 h-9 flex items-center justify-center rounded-xl
-                     hover:bg-gray-100 active:bg-gray-200 transition-all duration-150 group"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4.5 h-4.5 text-gray-500 group-hover:text-gray-700 transition-colors" />
-          {/* Pulse dot */}
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500
-                           ring-2 ring-white animate-ping-slow" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white" />
-        </button>
+        {/* Notifications */}
+        <div className="relative">
+          <button
+            id="notifications-trigger"
+            onClick={() => setShowNotifications(v => !v)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl
+                       hover:bg-cream-sand/70 active:bg-cream-deep transition-all duration-150 group"
+            aria-label="Notifications"
+            aria-haspopup="true"
+            aria-expanded={showNotifications}
+          >
+            <Bell className="w-4 h-4 text-gray-500 group-hover:text-gray-700 transition-colors" />
+          </button>
+
+          {showNotifications && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowNotifications(false)} />
+              <div className="absolute right-0 top-full mt-2 w-64 bg-cream-card/95 backdrop-blur-md
+                              rounded-2xl shadow-card-lg border border-cream-border/80 p-4 z-20
+                              animate-slide-down origin-top-right"
+                   role="dialog" aria-label="Notifications">
+                <p className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3">
+                  Notifications
+                </p>
+                <div className="text-center py-4">
+                  <div className="w-10 h-10 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-2.5">
+                    <Inbox className="w-5 h-5 text-gray-300" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-600 mb-0.5">No notifications yet</p>
+                  <p className="text-xs text-gray-500">
+                    Lab validations and system updates will appear here.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* User dropdown */}
         <div className="relative">
           <button
+            id="user-menu-trigger"
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2 px-2 py-1.5 rounded-xl
-                       hover:bg-gray-100 active:bg-gray-200
+                       hover:bg-cream-sand/70 active:bg-cream-deep
                        transition-all duration-150 group"
+            aria-haspopup="menu"
+            aria-expanded={showUserMenu}
           >
             {/* Avatar */}
             <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${avatarColor}
@@ -109,12 +156,12 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
               <p className="text-sm font-semibold text-gray-900 leading-tight">
                 {user?.displayName?.split(' ')[0] || 'User'}
               </p>
-              <p className="text-[10px] text-gray-400 leading-tight font-medium">
+              <p className="text-[10px] text-gray-500 leading-tight font-medium">
                 {ROLE_LABELS[user?.role] || '—'}
               </p>
             </div>
             <ChevronDown
-              className={`w-3.5 h-3.5 text-gray-400 hidden sm:block transition-transform duration-200
+              className={`w-3.5 h-3.5 text-gray-500 hidden sm:block transition-transform duration-200
                          ${showUserMenu ? 'rotate-180' : ''}`}
             />
           </button>
@@ -123,9 +170,10 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white/95 backdrop-blur-md
-                              rounded-2xl shadow-card-lg border border-gray-100/80 py-1.5 z-20
-                              animate-slide-down origin-top-right">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-cream-card/95 backdrop-blur-md
+                              rounded-2xl shadow-card-lg border border-cream-border/80 py-1.5 z-20
+                              animate-slide-down origin-top-right"
+                   role="menu" aria-label="Account menu">
                 {/* User info */}
                 <div className="px-4 py-2.5 border-b border-gray-100">
                   <div className="flex items-center gap-2.5">
@@ -135,11 +183,11 @@ export default function Navbar({ onMenuClick, sidebarOpen }) {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-gray-900 truncate">{user?.displayName}</p>
-                      <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
+                      <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
                     </div>
                   </div>
                   {user?.barangay && (
-                    <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
+                    <p className="text-[11px] text-gray-500 mt-1.5 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
                       {user.barangay}, Roxas, Oriental Mindoro
                     </p>

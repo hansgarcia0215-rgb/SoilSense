@@ -73,14 +73,14 @@ export default function App() {
           </Route>
 
           {/* ─── Extension Worker + Researcher ──────────── */}
-          <Route element={<ProtectedRoute roles={['extension_worker', 'researcher', 'admin']} />}>
+          <Route element={<ProtectedRoute roles={['extension_worker', 'admin']} />}>
             <Route element={<AppLayout />}>
               <Route path="/assessments"  element={<AssessmentHistory />} />
               <Route path="/lab"          element={<LabValidation />} />
             </Route>
           </Route>
 
-          {/* ─── Researcher / Admin Only ─────────────────── */}
+          {/* ─── System Administrator Only ───────────────── */}
           <Route element={<ProtectedRoute roles={['researcher', 'admin']} />}>
             <Route element={<AppLayout />}>
               <Route path="/analytics"    element={<ResearchAnalytics />} />
@@ -97,7 +97,7 @@ export default function App() {
 
         {/* Global toast notification system */}
         <Toaster
-          position="top-right"
+          position="top-center"
           toastOptions={{
             duration: 4000,
             style: {

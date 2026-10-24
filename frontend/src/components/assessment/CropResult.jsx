@@ -50,7 +50,7 @@ export default function CropResult({ result, index = 0 }) {
               </span>
               <h3 className="text-lg font-black text-gray-900 leading-tight">{result.cropName}</h3>
               {result.localName && (
-                <p className="text-xs text-gray-400 italic mt-0.5">{result.localName}</p>
+                <p className="text-xs text-gray-500 italic mt-0.5">{result.localName}</p>
               )}
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {result.category && (
@@ -72,7 +72,7 @@ export default function CropResult({ result, index = 0 }) {
             <div className={`text-3xl font-black tabular-nums ${scoreColor}`}>
               {score.toFixed(0)}<span className="text-sm font-medium text-gray-300">%</span>
             </div>
-            <div className="text-[10px] text-gray-400 font-medium">suitability</div>
+            <div className="text-[10px] text-gray-500 font-medium">suitability</div>
             {!result.meetsThreshold && result.status !== 'NOT_SUITABLE' && (
               <div className="text-[10px] text-red-400 font-semibold mt-0.5">Below threshold</div>
             )}
@@ -100,7 +100,7 @@ export default function CropResult({ result, index = 0 }) {
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-center gap-1.5 py-2.5
-                   border-t border-white/50 text-xs font-semibold text-gray-400
+                   border-t border-white/50 text-xs font-semibold text-gray-500
                    hover:text-gray-700 bg-white/30 hover:bg-white/60
                    transition-all duration-150"
       >

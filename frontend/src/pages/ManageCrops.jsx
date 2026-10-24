@@ -165,7 +165,7 @@ export default function ManageCrops() {
               <tr key={crop.id || crop.cropId} className="hover:bg-gray-50">
                 <td className="px-5 py-3">
                   <div className="font-semibold text-gray-900">{crop.cropName}</div>
-                  <div className="text-xs text-gray-400 italic">{crop.localName}</div>
+                  <div className="text-xs text-gray-500 italic">{crop.localName}</div>
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell text-gray-600">
                   {crop.requirements?.phMin}–{crop.requirements?.phMax}
@@ -288,7 +288,7 @@ export default function ManageCrops() {
 
             <div className="border-t border-gray-100 pt-4">
               <p className="text-sm font-bold text-gray-700 mb-1">Suitability Weights
-                <span className="text-xs font-normal text-gray-400 ml-2">(must sum to 1.0)</span>
+                <span className="text-xs font-normal text-gray-500 ml-2">(must sum to 1.0)</span>
               </p>
               <div className="grid grid-cols-5 gap-2">
                 {Object.entries(form.suitabilityWeights).map(([key, val]) => (
@@ -299,7 +299,7 @@ export default function ManageCrops() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Total: {Object.values(form.suitabilityWeights).reduce((a,b) => a + b, 0).toFixed(2)}
               </p>
             </div>

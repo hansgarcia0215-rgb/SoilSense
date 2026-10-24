@@ -119,7 +119,7 @@ export default function Reports() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
         <input className="input-field pl-9" placeholder="Search assessments to download..."
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
@@ -130,7 +130,7 @@ export default function Reports() {
           <LoadingSpinner size="lg" message="Loading..." />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-gray-500">
           <FileText className="w-10 h-10 mx-auto mb-2 text-gray-200" />
           <p className="text-sm">No assessments found.</p>
         </div>

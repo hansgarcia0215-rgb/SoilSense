@@ -34,12 +34,12 @@ export default function AppLogo({ size = 'md', showText = true, dark = false, cl
       {/* Optional text */}
       {showText && (
         <div>
-          <span className={`font-black tracking-tight leading-none block
+          <span className={`font-display font-black tracking-tight leading-none block
                             ${s.text} ${dark ? 'text-white' : 'text-gray-900'}`}>
             SoilSense
           </span>
           <span className={`font-medium tracking-widest uppercase leading-none block
-                            ${s.sub} ${dark ? 'text-white/50' : 'text-gray-400'}`}>
+                            ${s.sub} ${dark ? 'text-white/50' : 'text-gray-500'}`}>
             Roxas · Mindoro
           </span>
         </div>

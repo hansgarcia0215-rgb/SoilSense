@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import api from '../services/api';
 
-const FERTILITY_COLORS = { fertile: '#22c55e', moderate: '#f59e0b', poor: '#ef4444' };
+const FERTILITY_COLORS = { fertile: '#d8ff70', moderate: '#e2cfa4', poor: '#c96a4e' };
 
 export default function ResearchAnalytics() {
   const [summary, setSummary]     = useState(null);
@@ -77,12 +77,12 @@ export default function ResearchAnalytics() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="mc max-w-5xl mx-auto space-y-6">
 
       <div className="flex items-center justify-between flex-wrap gap-3 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Research Analytics</h1>
-          <p className="text-sm text-gray-400 mt-0.5">System performance, accuracy metrics, and data distribution</p>
+          <p className="text-sm text-gray-500 mt-0.5">System performance, accuracy metrics, and data distribution</p>
         </div>
         <button onClick={handleExport}
           className="btn-secondary text-sm hover:shadow-sm">
@@ -116,7 +116,7 @@ export default function ResearchAnalytics() {
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-          ) : <p className="text-sm text-gray-400 text-center py-8">No data yet</p>}
+          ) : <p className="text-sm text-gray-500 text-center py-8">No data yet</p>}
         </div>
 
         {/* Accuracy metrics */}
@@ -133,7 +133,7 @@ export default function ResearchAnalytics() {
                   <div key={cls}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-semibold capitalize text-gray-700">{cls}</span>
-                      <span className="text-xs text-gray-400">F1: {f != null ? (f*100).toFixed(1)+'%' : '—'}</span>
+                      <span className="text-xs text-gray-500">F1: {f != null ? (f*100).toFixed(1)+'%' : '—'}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -158,8 +158,8 @@ export default function ResearchAnalytics() {
           ) : (
             <div className="text-center py-8">
               <FlaskConical className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">No lab validation data yet.</p>
-              <p className="text-xs text-gray-400 mt-1">Enter lab results from the Lab Validation page.</p>
+              <p className="text-sm text-gray-500">No lab validation data yet.</p>
+              <p className="text-xs text-gray-500 mt-1">Enter lab results from the Lab Validation page.</p>
             </div>
           )}
         </div>
@@ -174,7 +174,7 @@ export default function ResearchAnalytics() {
             <table className="text-sm text-center">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 text-xs text-gray-400 font-normal">Actual ↓ / Predicted →</th>
+                  <th className="px-4 py-2 text-xs text-gray-500 font-normal">Actual ↓ / Predicted →</th>
                   {classNames.map(c => (
                     <th key={c} className="px-4 py-2 font-bold capitalize text-gray-700">{c}</th>
                   ))}

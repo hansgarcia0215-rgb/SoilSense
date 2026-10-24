@@ -2,46 +2,36 @@
  * auth.routes.js — Authentication endpoint definitions
  *
  * Routes:
- *   POST  /api/auth/register   → Create new user account
- *   POST  /api/auth/login      → Sign in and get JWT token
- *   GET   /api/auth/me         → Get current user profile
- *   PATCH /api/auth/me         → Update profile (displayName, barangay, preferredDeviceId)
- *   PATCH /api/auth/password   → Change password
+ *   POST  /api/auth/sync-profile → Upsert Firestore profile after Firebase sign-in
+ *   GET   /api/auth/me           → Get current user profile
+ *   PATCH /api/auth/me           → Update profile (displayName, barangay, preferredDeviceId)
+ *
+ * Registration and login are handled by Firebase Authentication on the client.
+ * The old /register, /login, and /password routes have been removed.
  */
 
 const express = require('express');
 const { body }  = require('express-validator');
 const router    = express.Router();
 
-const { register, login, getProfile, updateProfile, changePassword } =
+const { syncProfile, getProfile, updateProfile } =
   require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { validate }     = require('../middleware/validate.middleware');
 
-// ─── Register ─────────────────────────────────────────────────
-router.post('/register',
+// ─── Sync Profile ─────────────────────────────────────────────
+// Upsert the Firestore profile after Firebase creates or signs in a user.
+router.post('/sync-profile',
+  authenticate,
   [
-    body('displayName').trim().notEmpty().withMessage('Full name is required.')
+    body('displayName').optional().trim()
       .isLength({ min: 2, max: 100 }).withMessage('Name must be 2–100 characters.'),
-    body('email').trim().isEmail().withMessage('Please provide a valid email address.').normalizeEmail(),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters.')
-      .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter.')
-      .matches(/[0-9]/).withMessage('Password must contain at least one number.'),
-    body('role').optional().isIn(['farmer', 'extension_worker', 'researcher', 'admin']).withMessage('Invalid role.'),
-    body('barangay').trim().notEmpty().withMessage('Barangay is required.'),
+    body('barangay').optional().trim(),
+    body('municipality').optional().trim(),
+    body('province').optional().trim(),
   ],
   validate,
-  register
-);
-
-// ─── Login ────────────────────────────────────────────────────
-router.post('/login',
-  [
-    body('email').trim().isEmail().withMessage('Please provide a valid email address.'),
-    body('password').notEmpty().withMessage('Password is required.'),
-  ],
-  validate,
-  login
+  syncProfile
 );
 
 // ─── Get Profile ──────────────────────────────────────────────
@@ -59,17 +49,6 @@ router.patch('/me',
   ],
   validate,
   updateProfile
-);
-
-// ─── Change Password ──────────────────────────────────────────
-router.patch('/password',
-  authenticate,
-  [
-    body('currentPassword').notEmpty().withMessage('Current password is required.'),
-    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters.'),
-  ],
-  validate,
-  changePassword
 );
 
 module.exports = router;

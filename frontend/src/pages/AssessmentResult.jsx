@@ -137,7 +137,7 @@ export default function AssessmentResult() {
 
         <div className="p-5">
           {/* Meta row */}
-          <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-gray-400 mb-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-gray-500 mb-4">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />{format(createdAt, 'MMM d, yyyy')}
@@ -160,7 +160,7 @@ export default function AssessmentResult() {
           <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap">
             {/* Score */}
             <div className="flex-shrink-0 text-center">
-              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
                 Soil Fertility
               </div>
               <FertilityBadge classification={fClass} size="md" />
@@ -179,7 +179,7 @@ export default function AssessmentResult() {
                   <span className="text-2xl font-black text-gray-900 leading-none tabular-nums">
                     {f.fertilityScore ?? 50}
                   </span>
-                  <span className="text-[10px] text-gray-400 font-medium">/100</span>
+                  <span className="text-[10px] text-gray-500 font-medium">/100</span>
                 </div>
               </div>
               <div className={`text-xs font-semibold mt-1.5
@@ -222,7 +222,7 @@ export default function AssessmentResult() {
                 sub={img.qualityScore != null ? `Score: ${(img.qualityScore * 100).toFixed(0)}%`
                   : (!img.imageQuality || img.imageQuality === 'unknown') ? 'Offline' : '—'}
                 color={img.imageQuality === 'good' ? 'text-green-600' :
-                       img.imageQuality === 'moderate' ? 'text-amber-500' : 'text-gray-400'}
+                       img.imageQuality === 'moderate' ? 'text-amber-500' : 'text-gray-500'}
                 bg="bg-white/70"
               />
               <MeasTile
@@ -263,7 +263,7 @@ export default function AssessmentResult() {
             </div>
             <div>
               <h2 className="font-black text-gray-900 text-base">Crop Recommendation</h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500">
                 Based on{' '}
                 <span className={`font-bold capitalize
                   ${fClass === 'fertile' ? 'text-green-600' :
@@ -291,7 +291,7 @@ export default function AssessmentResult() {
                        transition-all duration-200 group"
           >
             <span>📊 Compare top three crops side-by-side</span>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300
+            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300
                                      ${showComparison ? 'rotate-180' : ''}`} />
           </button>
           {showComparison && (
@@ -311,7 +311,7 @@ export default function AssessmentResult() {
                            transition-all duration-200"
               >
                 <span>🌾 See all {allCrops.length} farm crops ranked</span>
-                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300
                                          ${showAllCrops ? 'rotate-180' : ''}`} />
               </button>
               {showAllCrops && (
@@ -344,7 +344,7 @@ export default function AssessmentResult() {
                             <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full
                               ${c.meetsThreshold
                                 ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-400'}`}>
+                                : 'bg-gray-100 text-gray-500'}`}>
                               {c.meetsThreshold ? 'Suitable' : 'Below threshold'}
                             </span>
                           </td>
@@ -352,7 +352,7 @@ export default function AssessmentResult() {
                       ))}
                     </tbody>
                   </table>
-                  <p className="text-xs text-gray-300 px-4 py-3 bg-gray-50 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 px-4 py-3 bg-gray-50 border-t border-gray-100">
                     🌿 = currently on farm · All scores driven by the{' '}
                     <span className="font-semibold capitalize">{fClass}</span> soil fertility result
                   </p>
@@ -383,7 +383,7 @@ export default function AssessmentResult() {
               </div>
               <span className="font-bold text-gray-800 text-sm">Fertilizer Recommendation</span>
             </div>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300
+            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300
                                      ${showFertilizer ? 'rotate-180' : ''}`} />
           </button>
           {showFertilizer && (
@@ -397,9 +397,9 @@ export default function AssessmentResult() {
                 </div>
               ))}
               {fert.retestRecommendation && (
-                <p className="text-xs text-gray-400 italic pt-1">{fert.retestRecommendation}</p>
+                <p className="text-xs text-gray-500 italic pt-1">{fert.retestRecommendation}</p>
               )}
-              <p className="text-[11px] text-gray-300 pt-1">
+              <p className="text-[11px] text-gray-500 pt-1">
                 Source: {fert.dataSource || 'REFERENCE — verify with qualified agricultural personnel'}
               </p>
             </div>
@@ -417,11 +417,11 @@ export default function AssessmentResult() {
         >
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center">
-              <Info className="w-3.5 h-3.5 text-gray-400" />
+              <Info className="w-3.5 h-3.5 text-gray-500" />
             </div>
             <span className="font-bold text-gray-700 text-sm">Technical Details (Fuzzy Logic)</span>
           </div>
-          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300
+          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300
                                    ${showTechnical ? 'rotate-180' : ''}`} />
         </button>
         {showTechnical && (
@@ -432,9 +432,9 @@ export default function AssessmentResult() {
                 <p className="font-bold text-gray-700 mb-1.5">Inputs Used</p>
                 <ul className="space-y-1">
                   <li>pH: <strong>{displayPH != null ? Number(displayPH).toFixed(1) : '—'}</strong>
-                    {' '}→ <em className="text-gray-400">{f.phFuzzySet ?? '—'}</em></li>
+                    {' '}→ <em className="text-gray-500">{f.phFuzzySet ?? '—'}</em></li>
                   <li>Moisture: <strong>{displayMoisture != null ? `${Number(displayMoisture).toFixed(0)}%` : '—'}</strong>
-                    {' '}→ <em className="text-gray-400">{f.moistureFuzzySet ?? '—'}</em></li>
+                    {' '}→ <em className="text-gray-500">{f.moistureFuzzySet ?? '—'}</em></li>
                   <li>Image: <strong>{img.imageQuality ?? '—'}</strong></li>
                 </ul>
               </div>
@@ -456,11 +456,11 @@ export default function AssessmentResult() {
               <p className="font-bold text-gray-700 mb-1.5">
                 Activated Rules: {f.activatedRules?.length || 0}
               </p>
-              <p className="font-mono text-gray-400">
+              <p className="font-mono text-gray-500">
                 {f.activatedRules?.join(', ') || 'None'}
               </p>
             </div>
-            <p className="text-gray-300 italic">
+            <p className="text-gray-500 italic">
               Mamdani inference · Centroid defuzzification
             </p>
             {data.labValidation?.isValidated && (
@@ -482,7 +482,7 @@ export default function AssessmentResult() {
       </div>
 
       {/* ── Disclaimer ─────────────────────────────────────── */}
-      <p className="text-xs text-gray-400 text-center px-2 animate-fade-in-up"
+      <p className="text-xs text-gray-500 text-center px-2 animate-fade-in-up"
          style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
         ⚠️ SoilSense provides a <strong>preliminary assessment</strong> and does not replace laboratory soil analysis.
         Verify all recommendations with a qualified agricultural extension officer before field application.
@@ -509,7 +509,7 @@ function MeasTile({ label, value, sub, color, bg = 'bg-gray-50', className = '' 
     <div className={`${bg} ${className} rounded-2xl p-3 text-center border border-white/60`}>
       <div className={`text-lg font-black leading-tight ${color}`}>{value}</div>
       <div className="text-[11px] font-semibold text-gray-600 mt-0.5">{label}</div>
-      <div className="text-[10px] text-gray-400 capitalize mt-0.5 truncate">{sub}</div>
+      <div className="text-[10px] text-gray-500 capitalize mt-0.5 truncate">{sub}</div>
     </div>
   );
 }

@@ -1,84 +1,70 @@
 /**
  * auth.controller.js — Authentication request handlers
  *
- * Handles: register, login, get-profile (me), update-profile (me), change-password
+ * Handles: sync-profile (upsert after Firebase sign-in), get-profile, update-profile
  *
- * Passwords are hashed with bcryptjs. Plain-text passwords are NEVER stored.
- * JWT contains { uid, email, role, displayName }.
+ * Registration and login are handled entirely by Firebase Authentication.
+ * The backend only manages the extended Firestore profile (role, barangay, etc.).
  */
 
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
 const { db }  = require('../firebase/admin');
 const { createError } = require('../utils/errorHandler');
 const { MUNICIPALITY, PROVINCE } = require('../utils/roxasConfig');
 
-const SALT_ROUNDS = 12;
+// ─── Sync Profile ─────────────────────────────────────────────
 
-// ─── Register ────────────────────────────────────────────────
-
-async function register(req, res, next) {
+/**
+ * POST /api/auth/sync-profile
+ * Called by the frontend immediately after Firebase sign-in or registration
+ * to upsert the extended Firestore profile.
+ *
+ * Body: { displayName?, barangay?, municipality?, province?, photoURL?, upsertOnly? }
+ *   - upsertOnly: when true (Google sign-in of existing user), only supplied
+ *     fields are updated and role/isActive are never overwritten.
+ */
+async function syncProfile(req, res, next) {
   try {
-    const { displayName, email, password, role, barangay, municipality, province } = req.body;
-    const normalizedEmail = email.trim().toLowerCase();
+    const uid = req.user.uid;
+    const { displayName, barangay, municipality, province, photoURL, upsertOnly } = req.body;
 
-    const existingQuery = await db.collection('users')
-      .where('email', '==', normalizedEmail).limit(1).get();
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
 
-    if (!existingQuery.empty) {
-      return next(createError(409, 'EMAIL_EXISTS',
-        'This email address is already registered. Please sign in instead.'));
+    if (!userDoc.exists) {
+      // First sign-in — create the full profile document
+      const newUser = {
+        uid,
+        displayName: displayName?.trim() || req.user.displayName || '',
+        email:       req.user.email || '',
+        photoURL:    photoURL || '',
+        role:        'farmer',
+        barangay:    barangay?.trim() || '',
+        municipality: municipality || MUNICIPALITY,
+        province:     province     || PROVINCE,
+        isActive:    true,
+        createdAt:   new Date(),
+        updatedAt:   new Date(),
+      };
+      await userRef.set(newUser);
+      return res.status(201).json({ success: true, user: safeUser(newUser) });
     }
 
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const userRef = db.collection('users').doc();
-    const userId  = userRef.id;
+    // Existing user — update only the supplied fields
+    const update = { updatedAt: new Date() };
+    if (displayName !== undefined) update.displayName = displayName.trim();
+    if (barangay    !== undefined) update.barangay    = barangay.trim();
+    if (municipality !== undefined) update.municipality = municipality;
+    if (province    !== undefined) update.province    = province;
+    if (photoURL    !== undefined) update.photoURL    = photoURL;
 
-    // Municipality and province are ALWAYS Roxas, Oriental Mindoro —
-    // the only service area. Any client-supplied override is ignored.
-    const newUser = {
-      uid: userId, displayName: displayName.trim(), email: normalizedEmail,
-      passwordHash, role: role || 'farmer', barangay: barangay || '',
-      municipality: MUNICIPALITY, province: PROVINCE,
-      isActive: true, createdAt: new Date(), updatedAt: new Date(),
-    };
-
-    await userRef.set(newUser);
-    const token = signToken(newUser);
-    res.status(201).json({ success: true, token, user: safeUser(newUser) });
-  } catch (err) { next(err); }
-}
-
-// ─── Login ───────────────────────────────────────────────────
-
-async function login(req, res, next) {
-  try {
-    const { email, password } = req.body;
-    const normalizedEmail = email.trim().toLowerCase();
-
-    const query = await db.collection('users')
-      .where('email', '==', normalizedEmail).limit(1).get();
-
-    if (query.empty) {
-      return next(createError(401, 'INVALID_CREDENTIALS', 'Invalid credentials.'));
+    // upsertOnly mode (Google existing user): never touch role or isActive
+    if (!upsertOnly && req.body.role) {
+      // Role changes are admin-only; ignore any role supplied here
     }
 
-    const userDoc  = query.docs[0];
-    const userData = userDoc.data();
-
-    if (!userData.isActive) {
-      return next(createError(403, 'ACCOUNT_DISABLED',
-        'Your account has been disabled. Please contact the administrator.'));
-    }
-
-    const passwordMatch = await bcrypt.compare(password, userData.passwordHash);
-    if (!passwordMatch) {
-      return next(createError(401, 'INVALID_CREDENTIALS', 'Invalid credentials.'));
-    }
-
-    await userDoc.ref.update({ lastLoginAt: new Date() });
-    const token = signToken(userData);
-    res.json({ success: true, token, user: safeUser(userData) });
+    await userRef.update(update);
+    const updatedDoc = await userRef.get();
+    return res.json({ success: true, user: safeUser(updatedDoc.data()) });
   } catch (err) { next(err); }
 }
 
@@ -99,7 +85,7 @@ async function getProfile(req, res, next) {
 /**
  * PATCH /api/auth/me
  * Body: { displayName?, barangay?, preferredDeviceId? }
- * Persists safe profile fields. Email, role, passwordHash cannot change here.
+ * Persists safe profile fields. Email, role, isActive cannot change here.
  */
 async function updateProfile(req, res, next) {
   try {
@@ -131,55 +117,12 @@ async function updateProfile(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// ─── Change Password ──────────────────────────────────────────
-
-/**
- * PATCH /api/auth/password
- * Body: { currentPassword, newPassword }
- */
-async function changePassword(req, res, next) {
-  try {
-    const uid = req.user.uid;
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return next(createError(422, 'MISSING_FIELDS', 'Both current and new password are required.'));
-    }
-    if (newPassword.length < 8) {
-      return next(createError(422, 'WEAK_PASSWORD', 'New password must be at least 8 characters.'));
-    }
-
-    const userDoc = await db.collection('users').doc(uid).get();
-    if (!userDoc.exists) {
-      return next(createError(404, 'USER_NOT_FOUND', 'User not found.'));
-    }
-
-    const userData = userDoc.data();
-    const passwordMatch = await bcrypt.compare(currentPassword, userData.passwordHash);
-    if (!passwordMatch) {
-      return next(createError(401, 'WRONG_PASSWORD', 'Current password is incorrect.'));
-    }
-
-    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    await db.collection('users').doc(uid).update({ passwordHash: newHash, updatedAt: new Date() });
-
-    res.json({ success: true, message: 'Password changed successfully.' });
-  } catch (err) { next(err); }
-}
-
 // ─── Helpers ─────────────────────────────────────────────────
 
-function signToken(user) {
-  return jwt.sign(
-    { uid: user.uid, email: user.email, role: user.role, displayName: user.displayName },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  );
-}
-
 function safeUser(user) {
+  // Strip any legacy passwordHash field that may exist in Firestore documents
   const { passwordHash, ...safe } = user;
   return safe;
 }
 
-module.exports = { register, login, getProfile, updateProfile, changePassword };
+module.exports = { syncProfile, getProfile, updateProfile };

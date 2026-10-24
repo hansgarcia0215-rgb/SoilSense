@@ -48,7 +48,7 @@ export default function AssessmentHistory() {
       <div className="flex items-center justify-between flex-wrap gap-3 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Assessment History</h1>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <p className="text-sm text-gray-500 mt-0.5">
             {assessments.length} total assessment{assessments.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -60,7 +60,7 @@ export default function AssessmentHistory() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up" style={{ animationDelay: '50ms', animationFillMode: 'both' }}>
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input type="text" className="input-field pl-10"
             placeholder="Search by ID, barangay, or crop..."
             value={search} onChange={e => setSearch(e.target.value)} />
@@ -103,7 +103,7 @@ export default function AssessmentHistory() {
           <h3 className="font-bold text-gray-700 mb-1">
             {search || filterClass !== 'all' ? 'No matching assessments' : 'No assessments yet'}
           </h3>
-          <p className="text-xs text-gray-400 mb-5">
+          <p className="text-xs text-gray-500 mb-5">
             {search || filterClass !== 'all'
               ? 'Try adjusting your search or filter.'
               : 'Create your first soil assessment.'}
@@ -154,7 +154,7 @@ export default function AssessmentHistory() {
                                              px-1.5 py-0.5 rounded-full font-bold">Lab ✓</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
+                        <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
                           {a.location?.barangay && (
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3 h-3" />{a.location.barangay}

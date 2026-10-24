@@ -63,7 +63,7 @@ export default function UpdatePrompt() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold leading-tight">Update available</p>
-            <p className="text-xs text-gray-400">A new version of SoilSense is ready</p>
+            <p className="text-xs text-gray-500">A new version of SoilSense is ready</p>
           </div>
           <button
             onClick={handleUpdate}

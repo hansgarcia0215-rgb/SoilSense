@@ -99,7 +99,7 @@ export default function ImageCapture({ onImageSelected, imageFile, quality }) {
         <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50
                         hover:border-green-400 hover:bg-green-50 transition-colors">
           <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Camera className="w-7 h-7 text-gray-400" />
+            <Camera className="w-7 h-7 text-gray-500" />
           </div>
           <p className="text-sm font-semibold text-gray-700 mb-1">Add a soil photo</p>
           <p className="text-xs text-gray-500 mb-4">JPEG or PNG, max 10 MB</p>

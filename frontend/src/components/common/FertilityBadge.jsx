@@ -1,17 +1,17 @@
 /**
- * FertilityBadge.jsx — Gradient pill badges for soil fertility classification
+ * FertilityBadge.jsx — Editorial pill badges for soil fertility classification
  */
 
 const CONFIG = {
-  fertile:  { label: 'Fertile',  emoji: '🟢', cls: 'badge-fertile',  glow: 'rgba(34,197,94,0.4)' },
-  moderate: { label: 'Moderate', emoji: '🟡', cls: 'badge-moderate', glow: 'rgba(245,158,11,0.4)' },
-  poor:     { label: 'Poor',     emoji: '🔴', cls: 'badge-poor',     glow: 'rgba(239,68,68,0.4)' },
+  fertile:  { label: 'Fertile',  dot: 'bg-green-600',  cls: 'badge-fertile'  },
+  moderate: { label: 'Moderate', dot: 'bg-soil-500',   cls: 'badge-moderate' },
+  poor:     { label: 'Poor',     dot: 'bg-[#a8402f]',  cls: 'badge-poor'     },
 };
 
 const SIZE = {
-  sm: 'text-xs px-2.5 py-0.5 gap-1',
-  md: 'text-xs px-3 py-1 gap-1.5',
-  lg: 'text-sm px-4 py-1.5 gap-2',
+  sm: 'text-xs px-2.5 py-0.5 gap-1.5',
+  md: 'text-xs px-3 py-1 gap-2',
+  lg: 'text-sm px-4 py-1.5 gap-2.5',
 };
 
 export default function FertilityBadge({ classification, size = 'md', showEmoji = true, className = '' }) {
@@ -27,7 +27,7 @@ export default function FertilityBadge({ classification, size = 'md', showEmoji 
         ${config.cls} ${sizeCls} ${className}
       `}
     >
-      {showEmoji && <span aria-hidden="true" className="text-xs">{config.emoji}</span>}
+      {showEmoji && <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${config.dot}`} />}
       {config.label}
     </span>
   );

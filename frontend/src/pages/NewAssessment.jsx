@@ -23,7 +23,6 @@ const STEPS = [
   { id: 3, label: 'Location', icon: '📍' },
   { id: 4, label: 'Analyze',  icon: '🔬' },
 ];
-const PROCESS_STEPS = ['upload','quality','features','sensor','fuzzy','fertility','crops','recommend'];
 
 export default function NewAssessment() {
   const navigate = useNavigate();
@@ -32,7 +31,6 @@ export default function NewAssessment() {
 
   const [step, setStep]         = useState(1);
   const [processing, setProcessing] = useState(false);
-  const [processStep, setProcessStep] = useState('upload');
   const [imageFile, setImageFile] = useState(null);
   const [notes, setNotes]         = useState('');
   const [manualPH, setManualPH]   = useState('');
@@ -56,10 +54,7 @@ export default function NewAssessment() {
   const handleSubmit = async () => {
     if (!imageFile) { toast.error('Please capture a soil image first.'); setStep(1); return; }
     setProcessing(true);
-    for (let i = 0; i < PROCESS_STEPS.length; i++) {
-      setProcessStep(PROCESS_STEPS[i]);
-      await sleep(600 + Math.random() * 400);
-    }
+    const startedAt = Date.now();
     try {
       const soilPH = sensor.connected ? sensor.sensor?.soilPH
         : manualPH !== '' ? parseFloat(manualPH) : undefined;
@@ -74,6 +69,14 @@ export default function NewAssessment() {
         deviceId: sensor.connected ? deviceId : undefined,
         barangay: user?.barangay, notes,
       });
+
+      // Keep the analysis screen readable even when the API responds fast
+      const MIN_SCREEN_MS = 1500;
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_SCREEN_MS) {
+        await new Promise(r => setTimeout(r, MIN_SCREEN_MS - elapsed));
+      }
+
       toast.success('Assessment complete!');
       navigate(`/assessments/${result.assessmentId}`);
     } catch (err) {
@@ -84,7 +87,7 @@ export default function NewAssessment() {
 
   if (processing) return (
     <div className="max-w-lg mx-auto animate-fade-in">
-      <ProcessingScreen currentStep={processStep} />
+      <ProcessingScreen />
     </div>
   );
 
@@ -98,7 +101,7 @@ export default function NewAssessment() {
       {/* Header */}
       <div className="animate-fade-in-up">
         <h1 className="text-2xl font-black text-gray-900">New Soil Assessment</h1>
-        <p className="text-gray-400 text-sm mt-0.5">
+        <p className="text-gray-500 text-sm mt-0.5">
           Device:{' '}
           <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded-lg">{deviceId}</code>
         </p>
@@ -176,12 +179,12 @@ function StepProgress({ steps, current }) {
                               ? 'bg-gradient-brand text-white shadow-glow-sm scale-110'
                               : current > s.id
                                 ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-400'}`}>
+                                : 'bg-gray-100 text-gray-500'}`}>
               {current > s.id ? '✓' : s.icon}
             </div>
             <span className={`text-[10px] font-semibold transition-colors duration-200
               ${current === s.id ? 'text-green-700' :
-                current > s.id ? 'text-green-500' : 'text-gray-400'}`}>
+                current > s.id ? 'text-green-500' : 'text-gray-500'}`}>
               {s.label}
             </span>
           </div>
@@ -200,7 +203,7 @@ function StepPhoto({ imageFile, onImageSelected, notes, setNotes, imgOffline }) 
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-black text-gray-900 mb-1">📸 Capture Soil Photo</h2>
-        <p className="text-sm text-gray-400">Take a clear photo of the soil you want to assess.</p>
+        <p className="text-sm text-gray-500">Take a clear photo of the soil you want to assess.</p>
       </div>
       {imgOffline && (
         <div className="flex items-start gap-2 bg-amber-50 border border-amber-100
@@ -232,14 +235,14 @@ function StepSensorData({ sensor, deviceId, manualPH, setManualPH, manualMoistur
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-black text-gray-900 mb-1">📡 Soil Sensor Data</h2>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           pH, moisture, and temperature improve accuracy. Connect your ESP32 or enter manually.
         </p>
       </div>
       <SensorStatus sensor={sensor.sensor} connected={sensor.connected}
                     loading={sensor.loading} onRefresh={sensor.refresh} />
       {!sensor.connected && (
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-gray-500">
           Polling <code className="font-mono bg-gray-100 px-1 rounded">{deviceId}</code> —
           change in <a href="/settings" className="text-blue-500 hover:underline">Settings</a>
         </p>
@@ -288,7 +291,7 @@ function StepLocation({ geo }) {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-black text-gray-900 mb-1">📍 Confirm Location</h2>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500">
           SoilSense serves <strong>Roxas, Oriental Mindoro</strong> only.
         </p>
       </div>
@@ -331,7 +334,7 @@ function StepLocation({ geo }) {
           </button>
         </div>
       )}
-      <p className="text-[11px] text-gray-300">
+      <p className="text-[11px] text-gray-500">
         GPS coordinates are stored with your assessment only and not shared externally.
       </p>
     </div>
@@ -351,7 +354,7 @@ function StepReview({ imageFile, geo, sensor, manualPH, manualMoisture, manualTe
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-black text-gray-900 mb-1">🔬 Ready to Analyze</h2>
-        <p className="text-sm text-gray-400">Review your inputs, then press Analyze Soil to start.</p>
+        <p className="text-sm text-gray-500">Review your inputs, then press Analyze Soil to start.</p>
       </div>
       <div className="space-y-2">
         {[
@@ -391,5 +394,3 @@ function StepReview({ imageFile, geo, sensor, manualPH, manualMoisture, manualTe
     </div>
   );
 }
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

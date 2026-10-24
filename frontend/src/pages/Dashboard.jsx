@@ -56,7 +56,7 @@ function StatCard({ icon, iconBg, label, value, small, delay = 0 }) {
       <div className={`font-black text-gray-900 tabular-nums ${small ? 'text-lg' : 'text-2xl'}`}>
         {typeof value === 'number' ? animated : value || '—'}
       </div>
-      <div className="text-xs text-gray-400 mt-0.5 font-medium">{label}</div>
+      <div className="text-xs text-gray-500 mt-0.5 font-medium">{label}</div>
     </div>
   );
 }
@@ -106,29 +106,24 @@ export default function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-5">
 
-      {/* ── Hero header ─────────────────────────────────────── */}
-      <div className="relative rounded-3xl overflow-hidden p-6 text-white animate-fade-in-up"
-           style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%)' }}>
-        <div className="absolute inset-0 bg-grid-pattern opacity-20" />
-        <div className="absolute inset-0 bg-noise" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-green-400/10 rounded-full blur-3xl" />
+      {/* ── Hero header — editorial ─────────────────────────── */}
+      <div className="relative card overflow-hidden p-6 animate-fade-in-up">
+        <div className="absolute top-0 right-0 w-56 h-56 bg-cream-deep/50 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-100/60 rounded-full blur-2xl" />
 
         <div className="relative flex items-start justify-between flex-wrap gap-4">
           <div>
-            <p className="text-green-300/70 text-sm font-medium mb-1">{greeting} 👋</p>
-            <h1 className="text-2xl font-black leading-tight">
+            <p className="hand-accent text-2xl leading-none mb-1">{greeting},</p>
+            <h1 className="text-3xl md:text-4xl text-ink leading-tight">
               {user?.displayName?.split(' ')[0] || 'Farmer'}
             </h1>
-            <p className="text-green-200/60 text-xs mt-1 flex items-center gap-1.5">
+            <p className="text-ink-faint text-xs mt-2 flex items-center gap-1.5">
               <MapPin className="w-3 h-3" />
               {user?.barangay ? `${user.barangay}, ` : ''}{user?.municipality || 'Roxas'}, Oriental Mindoro
             </p>
           </div>
           <Link to="/assess/new"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
-                       bg-white text-green-800 font-bold text-sm flex-shrink-0
-                       hover:bg-green-50 hover:shadow-lg hover:-translate-y-0.5
-                       transition-all duration-200 group">
+            className="btn-primary flex-shrink-0 group">
             <PlusCircle className="w-4 h-4" />
             New Assessment
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -177,7 +172,7 @@ export default function Dashboard() {
                 <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
                   <circle cx="32" cy="32" r="28" fill="none" stroke="#f3f4f6" strokeWidth="6" />
                   <circle cx="32" cy="32" r="28" fill="none"
-                    stroke={latest.fertilityClass === 'fertile' ? '#22c55e' : latest.fertilityClass === 'moderate' ? '#f59e0b' : '#ef4444'}
+                    stroke={latest.fertilityClass === 'fertile' ? '#4a652e' : latest.fertilityClass === 'moderate' ? '#b0722a' : '#a8402f'}
                     strokeWidth="6" strokeLinecap="round"
                     strokeDasharray={`${(latest.fertilityScore / 100) * 175.9} 175.9`} />
                 </svg>
@@ -210,7 +205,7 @@ export default function Dashboard() {
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                 Fertility Over Time
               </span>
-              <span className="text-xs text-gray-300 font-mono">{trend.count} pts</span>
+              <span className="text-xs text-gray-500 font-mono">{trend.count} pts</span>
             </div>
             <FertilityTrendChart points={trend.points} />
           </div>
@@ -241,7 +236,7 @@ export default function Dashboard() {
               <ClipboardList className="w-6 h-6 text-gray-300" />
             </div>
             <p className="text-sm font-semibold text-gray-600 mb-1">No assessments yet</p>
-            <p className="text-xs text-gray-400 mb-4">Start your first soil assessment</p>
+            <p className="text-xs text-gray-500 mb-4">Start your first soil assessment</p>
             <Link to="/assess/new" className="btn-primary text-xs px-4 py-2">
               <PlusCircle className="w-3.5 h-3.5" /> New Assessment
             </Link>
@@ -261,8 +256,8 @@ export default function Dashboard() {
                       {/* Score dot */}
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
                                       text-white text-xs font-black
-                                      ${a.fertilityClass === 'fertile'  ? 'bg-green-500' :
-                                        a.fertilityClass === 'moderate' ? 'bg-amber-500' : 'bg-red-500'}`}>
+                                      ${a.fertilityClass === 'fertile'  ? 'bg-green-600' :
+                                        a.fertilityClass === 'moderate' ? 'bg-soil-500' : 'bg-[#a8402f]'}`}>
                         {a.fertilityScore}
                       </div>
                       <div className="min-w-0">
@@ -273,7 +268,7 @@ export default function Dashboard() {
                                              rounded-full font-semibold">Lab</span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-500 mt-0.5">
                           {a.location?.barangay || 'Roxas'} · {format(ts, 'MMM d, yyyy')}
                         </p>
                       </div>
@@ -307,7 +302,7 @@ export default function Dashboard() {
             style={{ animationDelay: `${200 + i * 60}ms`, animationFillMode: 'both' }}>
             <div className="text-2xl mb-2">{tip.emoji}</div>
             <p className="text-xs font-bold text-gray-700 mb-0.5">{tip.title}</p>
-            <p className="text-xs text-gray-400">{tip.desc}</p>
+            <p className="text-xs text-gray-500">{tip.desc}</p>
           </div>
         ))}
       </div>

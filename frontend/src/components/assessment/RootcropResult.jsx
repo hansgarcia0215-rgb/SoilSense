@@ -45,7 +45,7 @@ export default function RootcropResult({ result }) {
             <div className={`text-3xl font-black ${scoreColor}`}>
               {result.suitabilityScore?.toFixed(0)}%
             </div>
-            <div className="text-xs text-gray-400">suitability</div>
+            <div className="text-xs text-gray-500">suitability</div>
             {!result.meetsThreshold && (
               <div className="text-xs text-red-500 font-medium mt-0.5">Below threshold</div>
             )}

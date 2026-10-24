@@ -1,5 +1,8 @@
 /**
- * Register.jsx — Production registration page with smooth animations
+ * Register.jsx — Registration page (public accounts are farmer accounts)
+ *
+ * Staff accounts (Extension Worker, System Administrator) are created
+ * by a System Administrator via Manage Users, not by public sign-up.
  */
 
 import { useState } from 'react';
@@ -10,19 +13,13 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { BARANGAYS, MUNICIPALITY, PROVINCE } from '../utils/roxasConfig';
 import AppLogo from '../components/common/AppLogo';
 
-const ROLES = [
-  { value: 'farmer',           icon: '👨‍🌾', label: 'Farmer',           desc: 'I want to assess my soil' },
-  { value: 'extension_worker', icon: '🌾', label: 'Extension Worker',  desc: 'I review farm assessments' },
-  { value: 'researcher',       icon: '🔬', label: 'Researcher',        desc: 'I analyze data and manage the system' },
-];
-
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     displayName: '', email: '', password: '', confirmPassword: '',
-    role: 'farmer', barangay: '', municipality: MUNICIPALITY, province: PROVINCE,
+    barangay: '', municipality: MUNICIPALITY, province: PROVINCE,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,13 +34,27 @@ export default function Register() {
 
   const validate = () => {
     const errors = {};
-    if (!formData.displayName.trim()) errors.displayName = 'Full name is required.';
-    if (!formData.email.trim())        errors.email = 'Email address is required.';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Enter a valid email address.';
-    if (!formData.password)            errors.password = 'Create a password.';
-    else if (formData.password.length < 8) errors.password = 'At least 8 characters required.';
-    if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match.';
-    if (!formData.barangay)            errors.barangay = 'Please select your barangay.';
+    const name = formData.displayName.trim();
+    if (!name)      errors.displayName = 'Full name is required.';
+    else if (name.length < 2 || name.length > 100)
+      errors.displayName = 'Name must be 2–100 characters.';
+    else if (!/^[a-zA-ZÀ-ÿ\u00f1\u00d1' .\-]+$/.test(name))
+      errors.displayName = 'Letters, spaces, hyphens and apostrophes only.';
+
+    const email = formData.email.trim();
+    if (!email) errors.email = 'Email address is required.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))
+      errors.email = 'Enter a valid email address.';
+
+    const pw = formData.password;
+    if (!pw)                 errors.password = 'Create a password.';
+    else if (pw.length < 8)  errors.password = 'At least 8 characters required.';
+    else if (!/[A-Z]/.test(pw)) errors.password = 'Include at least one uppercase letter.';
+    else if (!/[0-9]/.test(pw)) errors.password = 'Include at least one number.';
+
+    if (formData.password !== formData.confirmPassword)
+      errors.confirmPassword = 'Passwords do not match.';
+    if (!formData.barangay) errors.barangay = 'Please select your barangay.';
     return errors;
   };
 
@@ -55,14 +66,20 @@ export default function Register() {
     try {
       await register({
         displayName: formData.displayName.trim(), email: formData.email.trim().toLowerCase(),
-        password: formData.password, role: formData.role, barangay: formData.barangay,
+        password: formData.password, barangay: formData.barangay,
         municipality: formData.municipality, province: formData.province,
       });
       navigate('/dashboard');
     } catch (err) {
-      const msg = err.response?.data?.message;
-      if (msg?.includes('already')) setFieldErrors({ email: 'This email is already registered.' });
-      else setError('Registration failed. Please check your information and try again.');
+      if (err.code === 'auth/email-already-in-use') {
+        setFieldErrors({ email: 'This email is already registered.' });
+      } else if (err.code === 'auth/invalid-email') {
+        setFieldErrors({ email: 'Enter a valid email address.' });
+      } else if (err.code === 'auth/weak-password') {
+        setFieldErrors({ password: 'Password is too weak. Use at least 8 characters.' });
+      } else {
+        setError('Registration failed. Please check your information and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -71,10 +88,11 @@ export default function Register() {
   const pwStrength = () => {
     const pw = formData.password;
     if (!pw) return null;
-    if (pw.length < 6) return { level: 1, label: 'Weak',     color: 'bg-red-400' };
-    if (pw.length < 8) return { level: 2, label: 'Fair',     color: 'bg-amber-400' };
-    if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) return { level: 4, label: 'Strong', color: 'bg-green-500' };
-    return { level: 3, label: 'Good', color: 'bg-blue-400' };
+    if (pw.length < 6) return { level: 1, label: 'Weak',     color: 'bg-[#c96a4e]' };
+    if (pw.length < 8) return { level: 2, label: 'Fair',     color: 'bg-soil-400' };
+    if (pw.length >= 8 && /[A-Z]/.test(pw) && /[0-9]/.test(pw))
+      return { level: 4, label: 'Strong', color: 'bg-green-600' };
+    return { level: 3, label: 'Good — add an uppercase letter and a number', color: 'bg-green-400' };
   };
   const strength = pwStrength();
 
@@ -132,10 +150,10 @@ export default function Register() {
               <div className="relative">
                 <input name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password"
                   className={`input-field pr-11 ${fieldErrors.password ? 'border-red-300 focus:ring-red-400' : ''}`}
-                  placeholder="Min. 8 characters"
+                  placeholder="Min. 8 characters, 1 uppercase, 1 number"
                   value={formData.password} onChange={handleChange} disabled={loading} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 transition-colors">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -169,28 +187,6 @@ export default function Register() {
               {fe('confirmPassword')}
             </div>
 
-            {/* Role selector */}
-            <div>
-              <label className="input-label">I am a...</label>
-              <div className="grid grid-cols-3 gap-2">
-                {ROLES.map(r => (
-                  <button key={r.value} type="button"
-                    onClick={() => setFormData(p => ({ ...p, role: r.value }))}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2
-                                text-center transition-all duration-200 hover:scale-[1.02]
-                                ${formData.role === r.value
-                                  ? 'border-green-500 bg-green-50 shadow-glow-sm'
-                                  : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/50'}`}>
-                    <span className="text-xl">{r.icon}</span>
-                    <span className={`text-xs font-bold leading-tight
-                                     ${formData.role === r.value ? 'text-green-700' : 'text-gray-600'}`}>
-                      {r.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Barangay */}
             <div>
               <label className="input-label">Barangay — {MUNICIPALITY}, {PROVINCE}</label>
@@ -214,7 +210,7 @@ export default function Register() {
           <Link to="/login" className="text-green-600 font-bold hover:text-green-700">Sign in</Link>
         </p>
         <p className="text-center mt-3">
-          <Link to="/" className="text-xs text-gray-400 hover:text-gray-600">← Back to home</Link>
+          <Link to="/" className="text-xs text-gray-500 hover:text-gray-600">← Back to home</Link>
         </p>
       </div>
     </div>

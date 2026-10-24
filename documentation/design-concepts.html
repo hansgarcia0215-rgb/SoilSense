@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoilSense — Design Direction Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Archivo:wght@400;600;800&family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0c0c0c; font-family: 'Archivo', sans-serif; padding: 24px 16px 48px; }
+  .picker { max-width: 1120px; margin: 0 auto 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .picker h1 { color: #fff; font-size: 15px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-right: 12px; }
+  .tab { padding: 10px 18px; border-radius: 999px; border: 1px solid #333; background: #161616; color: #bbb;
+         font: 600 13px 'Archivo'; cursor: pointer; transition: all .15s; }
+  .tab:hover { color: #fff; border-color: #555; }
+  .tab.active { background: #a3e635; color: #131300; border-color: #a3e635; }
+  .concept { display: none; max-width: 1120px; margin: 0 auto; }
+  .concept.active { display: block; }
+  .note { color: #888; font-size: 12px; margin: 10px auto 0; max-width: 1120px; text-align: center; }
+  .frame { border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+
+  /* ═══════════════ A — ORGANIC EDITORIAL ═══════════════ */
+  .a-root { background: #f7f1e5; color: #3a2c1c; position: relative; }
+  .a-root::before { content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E"); }
+  .a-nav { display:flex; justify-content:space-between; align-items:center; padding: 22px 40px; border-bottom: 1px solid #e2d5bd; position:relative; }
+  .a-logo { font-family:'Fraunces',serif; font-weight:900; font-size: 20px; color: #2f4520; letter-spacing:-.01em; }
+  .a-logo em { font-style:italic; color:#b05c34; }
+  .a-link { font-size:13px; color:#7a6a52; margin-left:22px; text-decoration:none; }
+  .a-btn { background:#2f4520; color:#f7f1e5; padding:10px 20px; border-radius:999px; font-size:13px; font-weight:600; border:none; }
+  .a-body { padding: 44px 40px 48px; position:relative; max-width: 1120px; }
+  .a-kicker { font-family:'Caveat',cursive; font-size:22px; color:#b05c34; transform:rotate(-2deg); display:inline-block; }
+  .a-h1 { font-family:'Fraunces',serif; font-weight:900; font-size: 52px; line-height:1.02; letter-spacing:-.02em; color:#33261a; margin: 8px 0 6px; }
+  .a-h1 em { font-style:italic; font-weight:400; color:#2f4520; }
+  .a-grid { display:grid; grid-template-columns: 1.1fr .9fr .9fr; gap: 18px; margin-top: 34px; }
+  .a-card { background:#fffdf8; border:1px solid #e6dac2; border-radius: 20px; padding: 24px; box-shadow: 0 12px 30px -18px rgba(90,60,20,.35); position:relative; }
+  .a-card.strata { background: linear-gradient(#fffdf8 0 62%, #efe3c8 62% 78%, #e2cfa4 78% 90%, #c9a86a 90%); }
+  .a-label { font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:#9b8666; font-weight:600; }
+  .a-big { font-family:'Fraunces',serif; font-weight:900; font-size:64px; line-height:1; color:#33261a; }
+  .a-big span { font-size:20px; font-weight:400; font-style:italic; color:#9b8666; }
+  .a-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 14px; border-radius:999px; font-size:12px; font-weight:600; }
+  .a-pill.g { background:#e7eeda; color:#3c5a28; }
+  .a-list { list-style:none; margin-top:18px; }
+  .a-list li { display:flex; justify-content:space-between; align-items:baseline; padding:11px 0; border-bottom:1px dashed #ddd0b4; font-size:14px; }
+  .a-list li:last-child { border:none; }
+  .a-list b { font-family:'Fraunces',serif; font-size:15px; }
+  .a-leaf { position:absolute; top:16px; right:20px; font-size:22px; }
+  .a-chart { margin-top:10px; }
+  .a-foot { font-family:'Caveat',cursive; color:#9b8666; font-size:17px; margin-top:26px; transform:rotate(-1deg); }
+
+  /* ═══════════════ B — NEO-BRUTALIST ═══════════════ */
+  .b-root { background: #191714; color: #f5f4ee; position:relative; }
+  .b-root::before { content:''; position:absolute; inset:0; pointer-events:none;
+    background-image: radial-gradient(rgba(163,230,53,.07) 1px, transparent 1px); background-size: 26px 26px; }
+  .b-nav { display:flex; justify-content:space-between; align-items:center; padding: 18px 32px; border-bottom: 2px solid #000; background:#a3e635; position:relative; }
+  .b-logo { font-family:'Archivo Black'; font-size:19px; color:#131300; letter-spacing:-.02em; text-transform:uppercase; }
+  .b-link { font-size:13px; font-weight:800; color:#131300; margin-left:20px; text-transform:uppercase; }
+  .b-btn { background:#131300; color:#a3e635; border:2px solid #000; padding:10px 18px; font:800 13px 'Archivo'; text-transform:uppercase;
+           box-shadow: 4px 4px 0 rgba(0,0,0,.35); }
+  .b-body { padding: 36px 32px 44px; position:relative; max-width:1120px; }
+  .b-kicker { display:inline-block; background:#f5f4ee; color:#131300; border:2px solid #000; padding:4px 12px;
+              font:800 11px 'Archivo'; text-transform:uppercase; box-shadow: 3px 3px 0 #a3e635; transform:rotate(-1.5deg); }
+  .b-h1 { font-family:'Archivo Black'; font-size: 46px; line-height:1.02; text-transform:uppercase; letter-spacing:-.01em; margin:14px 0 4px; }
+  .b-h1 span { color:#a3e635; }
+  .b-grid { display:grid; grid-template-columns: 1.15fr .85fr .85fr; gap:20px; margin-top:30px; }
+  .b-card { background:#232019; border:2px solid #000; box-shadow: 7px 7px 0 #000; padding:22px; position:relative; }
+  .b-card.lime { background:#a3e635; color:#131300; }
+  .b-label { font:800 10px 'Archivo'; letter-spacing:.18em; text-transform:uppercase; color:#8d8a7d; }
+  .b-card.lime .b-label { color:#3d4a12; }
+  .b-big { font-family:'Archivo Black'; font-size:58px; line-height:1; margin-top:8px; }
+  .b-big span { font-size:18px; font-family:'Archivo'; font-weight:600; }
+  .b-tag { display:inline-block; background:#f5f4ee; border:2px solid #000; color:#131300; padding:3px 10px; font:800 11px 'Archivo'; text-transform:uppercase; margin-top:10px; box-shadow:3px 3px 0 #000; }
+  .b-card.lime .b-tag { box-shadow:3px 3px 0 #131300; }
+  .b-row { display:flex; justify-content:space-between; align-items:center; border:2px solid #000; background:#2b2820; padding:12px 14px; margin-top:12px; font-weight:800; font-size:14px; }
+  .b-row .sc { background:#a3e635; color:#131300; border:2px solid #000; padding:2px 10px; font-family:'Archivo Black'; }
+  .b-row.win { background:#a3e635; color:#131300; box-shadow:5px 5px 0 #000; }
+  .b-row.win .sc { background:#f5f4ee; }
+  .b-chart { display:flex; align-items:flex-end; gap:8px; height:120px; margin-top:16px; }
+  .b-chart i { flex:1; background:#a3e635; border:2px solid #000; box-shadow:3px 3px 0 #000; }
+  .b-chart i:nth-child(2n) { background:#f5f4ee; }
+  .b-foot { margin-top:24px; font:800 12px 'Archivo'; text-transform:uppercase; color:#8d8a7d; letter-spacing:.1em; }
+
+  /* ═══════════════ C — DARK MISSION CONTROL ═══════════════ */
+  .c-root { background:#070d08; color:#e6efe4; position:relative; }
+  .c-root::before { content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Cg fill='none' stroke='%23172a18' stroke-width='1.2'%3E%3Cpath d='M0 90 Q220 40 450 110 T900 80'/%3E%3Cpath d='M0 170 Q240 110 470 190 T900 150'/%3E%3Cpath d='M0 260 Q210 200 460 280 T900 240'/%3E%3Cpath d='M0 360 Q260 290 480 380 T900 330'/%3E%3Cpath d='M0 470 Q230 400 470 500 T900 440'/%3E%3Cpath d='M0 560 Q250 500 480 590 T900 540'/%3E%3C/g%3E%3C/svg%3E"); }
+  .c-nav { display:flex; justify-content:space-between; align-items:center; padding: 20px 36px; border-bottom:1px solid #142312; background:rgba(7,13,8,.8); position:relative; backdrop-filter: blur(8px); }
+  .c-logo { font:700 16px 'Archivo'; letter-spacing:.28em; text-transform:uppercase; color:#d8ff70; }
+  .c-logo small { color:#5c7a58; letter-spacing:.2em; font-size:10px; display:block; }
+  .c-link { font-size:12px; color:#7d957a; margin-left:22px; letter-spacing:.08em; }
+  .c-btn { border:1px solid #d8ff70; color:#d8ff70; background:rgba(216,255,112,.06); padding:9px 18px; border-radius:8px; font:600 12px 'JetBrains Mono'; letter-spacing:.06em; }
+  .c-body { padding: 40px 36px 48px; position:relative; max-width:1120px; }
+  .c-kicker { font:400 11px 'JetBrains Mono'; color:#6f9169; letter-spacing:.3em; text-transform:uppercase; }
+  .c-h1 { font-family:'Archivo'; font-weight:800; font-size:40px; letter-spacing:-.01em; margin:10px 0 4px; color:#f2f8ee; }
+  .c-h1 span { color:#d8ff70; text-shadow: 0 0 24px rgba(216,255,112,.5); }
+  .c-grid { display:grid; grid-template-columns: 320px 1fr 1fr; gap:16px; margin-top:32px; align-items:stretch; }
+  .c-card { background: linear-gradient(160deg, rgba(24,40,22,.75), rgba(12,20,12,.85)); border:1px solid #1d351c; border-radius:14px; padding:22px;
+            box-shadow: inset 0 1px 0 rgba(216,255,112,.08), 0 20px 40px -24px #000; position:relative; overflow:hidden; }
+  .c-card::after { content:''; position:absolute; top:0; left:8%; right:8%; height:1px;
+                   background:linear-gradient(90deg, transparent, rgba(216,255,112,.4), transparent); }
+  .c-label { font:400 10px 'JetBrains Mono'; color:#6f9169; letter-spacing:.24em; text-transform:uppercase; }
+  .c-gauge { display:flex; align-items:center; gap:18px; margin-top:16px; }
+  .c-val { font:700 44px 'JetBrains Mono'; color:#d8ff70; text-shadow: 0 0 30px rgba(216,255,112,.55); line-height:1; }
+  .c-val small { font-size:13px; color:#6f9169; text-shadow:none; }
+  .c-meter { height:5px; border-radius:99px; background:#122012; margin-top:14px; overflow:hidden; }
+  .c-meter i { display:block; height:100%; width:82%; border-radius:99px;
+               background: linear-gradient(90deg,#3f8f3a,#d8ff70); box-shadow: 0 0 12px rgba(216,255,112,.6); }
+  .c-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+  .c-stat { border:1px solid #1d351c; background:rgba(10,18,10,.7); border-radius:10px; padding:10px 12px; }
+  .c-stat b { display:block; font:700 18px 'JetBrains Mono'; color:#bfe86a; margin-top:4px; }
+  .c-line { margin-top:12px; }
+  .c-rows { margin-top:8px; }
+  .c-row { display:flex; justify-content:space-between; align-items:center; padding:11px 2px; border-bottom:1px solid #13220f; font:400 13px 'Archivo'; color:#cfe3c8; }
+  .c-row:last-child { border:none; }
+  .c-row .mono { font:700 13px 'JetBrains Mono'; color:#d8ff70; }
+  .c-foot { font:400 10px 'JetBrains Mono'; color:#4d6a49; letter-spacing:.2em; text-transform:uppercase; margin-top:26px; }
+
+  @media (max-width: 900px) { .a-grid,.b-grid,.c-grid { grid-template-columns: 1fr; } .a-h1,.b-h1,.c-h1 { font-size:36px; } }
+</style>
+</head>
+<body>
+
+<div class="picker">
+  <h1>SoilSense · Design Directions</h1>
+  <button class="tab active" data-t="a">A — Organic Editorial</button>
+  <button class="tab" data-t="b">B — Neo-Brutalist Agri-Tech</button>
+  <button class="tab" data-t="c">C — Dark Mission Control</button>
+</div>
+<p class="note">Same Dashboard content, three identities. Click the tabs to switch.</p>
+
+<!-- ══════════════ A ══════════════ -->
+<section class="concept active" id="a">
+  <div class="frame a-root">
+    <nav class="a-nav">
+      <div class="a-logo">Soil<em>Sense</em></div>
+      <div>
+        <a class="a-link" href="#">Dashboard</a><a class="a-link" href="#">Assessments</a><a class="a-link" href="#">Map</a>
+        <button class="a-btn" style="margin-left:20px">New Assessment</button>
+      </div>
+    </nav>
+    <div class="a-body">
+      <span class="a-kicker">good morning, Ryan</span>
+      <h1 class="a-h1">Your soil, <em>told simply.</em></h1>
+      <div class="a-grid">
+        <div class="a-card strata">
+          <span class="a-leaf">🌿</span>
+          <div class="a-label">Latest Assessment · Barangay Roxas</div>
+          <div class="a-big">82<span> /100</span></div>
+          <div style="margin-top:12px"><span class="a-pill g">● Fertile soil</span></div>
+          <ul class="a-list">
+            <li><b>Mango — Kinalabaw</b><span>94%</span></li>
+            <li><b>Lanzones</b><span>88%</span></li>
+            <li style="color:#a86a4a"><b style="color:#a86a4a">Bugambilya</b><span>28%</span></li>
+          </ul>
+        </div>
+        <div class="a-card">
+          <div class="a-label">Fertility over time</div>
+          <svg class="a-chart" width="100%" height="120" viewBox="0 0 240 120" fill="none">
+            <path d="M8 96 C40 88 60 70 92 66 C124 62 140 44 172 34 C196 27 216 22 232 16" stroke="#b05c34" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="232" cy="16" r="4" fill="#b05c34"/><circle cx="172" cy="34" r="3" fill="#e2cfa4" stroke="#b05c34" stroke-width="1.5"/><circle cx="92" cy="66" r="3" fill="#e2cfa4" stroke="#b05c34" stroke-width="1.5"/>
+          </svg>
+          <div class="a-foot">seven assessments and rising —</div>
+        </div>
+        <div class="a-card">
+          <div class="a-label">This season</div>
+          <ul class="a-list">
+            <li><b>Assessments</b><span>14</span></li>
+            <li><b>This week</b><span>3</span></li>
+            <li><b>Average score</b><span>74.2</span></li>
+            <li><b>Top crop</b><span>Mango</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ B ══════════════ -->
+<section class="concept" id="b">
+  <div class="frame b-root">
+    <nav class="b-nav">
+      <div class="b-logo">SoilSense ▚</div>
+      <div>
+        <a class="b-link" href="#">Dashboard</a><a class="b-link" href="#">History</a><a class="b-link" href="#">Map</a>
+        <button class="b-btn" style="margin-left:16px">+ Assess</button>
+      </div>
+    </nav>
+    <div class="b-body">
+      <span class="b-kicker">Farmer Mode · Roxas</span>
+      <h1 class="b-h1">Dig data.<br><span>Grow smarter.</span></h1>
+      <div class="b-grid">
+        <div class="b-card lime">
+          <div class="b-label">Latest Result · Fertility</div>
+          <div class="b-big">82<span> /100</span></div>
+          <span class="b-tag">★ FERTILE</span>
+          <div style="margin-top:14px; font-weight:800; font-size:14px;">BEST CROP → <u>MANGO · KINALABAW</u></div>
+          <div class="b-chart">
+            <i style="height:34%"></i><i style="height:48%"></i><i style="height:44%"></i><i style="height:62%"></i><i style="height:58%"></i><i style="height:74%"></i><i style="height:82%"></i>
+          </div>
+        </div>
+        <div class="b-card">
+          <div class="b-label">Total Assessments</div>
+          <div class="b-big">14</div>
+          <span class="b-tag">↑ 3 THIS WEEK</span>
+        </div>
+        <div class="b-card">
+          <div class="b-label">Average Score</div>
+          <div class="b-big">74<span>.2</span></div>
+          <span class="b-tag">TREND: IMPROVING</span>
+        </div>
+        <div class="b-card" style="grid-column:1/-1; padding:18px 22px;">
+          <div class="b-label" style="margin-bottom:4px">Recent Assessments</div>
+          <div class="b-row win"><span>🥇 MANGO — KINALABAW</span><span class="sc">94%</span></div>
+          <div class="b-row"><span>🥈 LANZONES</span><span class="sc">88%</span></div>
+          <div class="b-row"><span>🚫 BUGAMBILYA</span><span class="sc" style="background:#f5f4ee">28%</span></div>
+        </div>
+      </div>
+      <div class="b-foot">// Preliminary tool · Lab analysis remains the standard</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ C ══════════════ -->
+<section class="concept" id="c">
+  <div class="frame c-root">
+    <nav class="c-nav">
+      <div class="c-logo">SOILSENSE<small>FIELD TELEMETRY · ROXAS</small></div>
+      <div>
+        <a class="c-link" href="#">OVERVIEW</a><a class="c-link" href="#">HISTORY</a><a class="c-link" href="#">MAP</a>
+        <button class="c-btn" style="margin-left:18px">+ NEW SCAN</button>
+      </div>
+    </nav>
+    <div class="c-body">
+      <div class="c-kicker">// Morning briefing — Oct 20</div>
+      <h1 class="c-h1">Sector status: <span>FERTILE</span></h1>
+      <div class="c-grid">
+        <div class="c-card">
+          <div class="c-label">Fertility Index</div>
+          <div class="c-gauge">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="40" fill="none" stroke="#122012" stroke-width="7"/>
+              <circle cx="48" cy="48" r="40" fill="none" stroke="#d8ff70" stroke-width="7" stroke-linecap="round"
+                      stroke-dasharray="206 251" transform="rotate(-90 48 48)" style="filter: drop-shadow(0 0 6px rgba(216,255,112,.7))"/>
+              <text x="48" y="55" text-anchor="middle" fill="#d8ff70" style="font:700 22px 'JetBrains Mono'">82</text>
+            </svg>
+            <div>
+              <div class="c-label">Classification</div>
+              <div style="font:700 20px 'Archivo'; color:#f2f8ee; margin-top:4px;">FERTILE</div>
+              <div class="c-label" style="margin-top:8px; color:#4d6a49;">±2 CONFIDENCE</div>
+            </div>
+          </div>
+          <div class="c-meter"><i></i></div>
+        </div>
+        <div class="c-card">
+          <div class="c-label">Sensor Telemetry</div>
+          <div class="c-stats">
+            <div class="c-stat"><span class="c-label">pH</span><b>6.7</b></div>
+            <div class="c-stat"><span class="c-label">Moisture</span><b>68%</b></div>
+            <div class="c-stat"><span class="c-label">Temp</span><b>26.5°C</b></div>
+            <div class="c-stat"><span class="c-label">Image Q</span><b>GOOD</b></div>
+          </div>
+          <div class="c-label" style="margin-top:16px">Fuzzy Engine · 24 rules active</div>
+          <div class="c-meter" style="margin-top:8px"><i style="width:90%"></i></div>
+        </div>
+        <div class="c-card">
+          <div class="c-label">Fertility Trend</div>
+          <svg class="c-line" width="100%" height="120" viewBox="0 0 260 120" fill="none">
+            <path d="M8 100 C40 92 64 76 96 70 C128 64 150 48 182 38 C206 31 228 24 252 18" stroke="#d8ff70" stroke-width="2.5" stroke-linecap="round" style="filter: drop-shadow(0 0 8px rgba(216,255,112,.55))"/>
+            <path d="M8 100 C40 92 64 76 96 70 C128 64 150 48 182 38 C206 31 228 24 252 18 L252 118 L8 118 Z" fill="url(#cg)" opacity=".5"/>
+            <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d8ff70" stop-opacity=".35"/><stop offset="1" stop-color="#d8ff70" stop-opacity="0"/></linearGradient></defs>
+          </svg>
+          <div class="c-rows">
+            <div class="c-row"><span>Best crop</span><span class="mono">MANGO 94%</span></div>
+            <div class="c-row"><span>Second</span><span class="mono" style="color:#bfe86a">LANZONES 88%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="c-foot">// Telemetry link stable · preliminary assessment only</div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.concept').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.t).classList.add('active');
+  }));
+</script>
+</body>
+</html>

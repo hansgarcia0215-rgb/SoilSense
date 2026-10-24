@@ -16,6 +16,8 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../services/firebase';
 import authService from '../services/authService';
 
 // Create the context object
@@ -31,13 +33,25 @@ export function AuthProvider({ children }) {
   // Whether we are currently checking auth status (to avoid flash of login page)
   const [loading, setLoading] = useState(true);
 
-  // Initialize: check if a user is already stored in localStorage
+  // Subscribe to Firebase Auth state changes — replaces the localStorage check.
+  // loading stays true until the first callback fires, which prevents a flash of
+  // the unauthenticated UI before Firebase has resolved the session.
   useEffect(() => {
-    const storedUser = authService.getCurrentUser();
-    if (storedUser && authService.isAuthenticated()) {
-      setUser(storedUser);
-    }
-    setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const data = await authService.getProfile();
+          setUser(data.user);
+          authService.updateStoredUser(data.user);
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   /**
@@ -51,21 +65,31 @@ export function AuthProvider({ children }) {
   }, []);
 
   /**
-   * Register a new account.
-   * Logs the user in immediately after registration.
+   * Register a new farmer account.
+   * Firebase Auth is created first, then the Firestore profile is synced.
    */
   const register = useCallback(async (userData) => {
-    const data = await authService.register(userData);
+    await authService.register(userData);
+    const data = await authService.getProfile();
+    setUser(data.user);
+    return data;
+  }, []);
+
+  /**
+   * Sign in with Google popup.
+   */
+  const loginWithGoogle = useCallback(async () => {
+    const data = await authService.loginWithGoogle();
     setUser(data.user);
     return data;
   }, []);
 
   /**
    * Log out the current user.
-   * Clears state and localStorage.
+   * Clears Firebase session and local cache.
    */
-  const logout = useCallback(() => {
-    authService.logout();
+  const logout = useCallback(async () => {
+    await authService.logout();
     setUser(null);
   }, []);
 
@@ -90,14 +114,14 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    loginWithGoogle,
     logout,
     updateUser,
     hasRole,
     isAuthenticated: !!user,
-    isFarmer:           user?.role === 'farmer',
-    isExtensionWorker:  user?.role === 'extension_worker',
-    isResearcher:       user?.role === 'researcher',
-    isAdmin:            user?.role === 'admin',
+    isFarmer:            user?.role === 'farmer',
+    isExtensionWorker:   user?.role === 'extension_worker',
+    isAdmin:             ['researcher', 'admin'].includes(user?.role),
     isResearcherOrAdmin: ['researcher', 'admin'].includes(user?.role),
     // Preferred ESP32 device ID from settings (falls back to default)
     preferredDeviceId: user?.preferredDeviceId || 'SS-ESP32-001',
@@ -105,7 +129,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {/* Don't render children until we've checked localStorage */}
+      {/* Don't render children until Firebase Auth has resolved */}
       {!loading && children}
     </AuthContext.Provider>
   );

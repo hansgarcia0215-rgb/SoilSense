@@ -79,10 +79,13 @@ const limiter = rateLimit({
   },
 });
 
-// Stricter rate limit for authentication endpoints
+// Stricter rate limit for authentication endpoints.
+// Only FAILED logins count toward the limit — successful sign-ins
+// never lock legitimate users out.
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,  // 15 minutes
-  max:      10,               // Max 10 login attempts per window
+  windowMs: 15 * 60 * 1000,      // 15 minutes
+  max:      10,                  // Max 10 failed login attempts per window
+  skipSuccessfulRequests: true,
   message: {
     success: false,
     error:   'AUTH_RATE_LIMIT',

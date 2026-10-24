@@ -21,25 +21,30 @@ const api = axios.create({
 });
 
 // ─── Request Interceptor ──────────────────────────────────────
-// Attach JWT token to every outgoing request
+// Fetch the Firebase ID token and attach it to every outgoing request.
+// Dynamic import prevents a circular dependency at module load time.
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('soilsense_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  async (config) => {
+    try {
+      const { auth } = await import('./firebase');
+      const token = await auth.currentUser?.getIdToken();
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+    } catch (_) {}
     return config;
   },
   (error) => Promise.reject(error)
 );
 
 // ─── Response Interceptor ─────────────────────────────────────
-// On 401, clear session and redirect to login
+// On 401, sign out from Firebase, clear the local cache, and redirect.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('soilsense_token');
+      try {
+        const { auth } = await import('./firebase');
+        await auth.signOut();
+      } catch (_) {}
       localStorage.removeItem('soilsense_user');
       window.location.href = '/login';
     }

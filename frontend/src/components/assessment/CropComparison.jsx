@@ -19,7 +19,7 @@ function Cell({ score }) {
   return (
     <td className="px-3 py-2 text-center">
       <span className={`font-bold text-sm ${color}`}>{icon}</span>
-      <span className="text-xs text-gray-400 ml-1">{score?.toFixed(0)}%</span>
+      <span className="text-xs text-gray-500 ml-1">{score?.toFixed(0)}%</span>
     </td>
   );
 }

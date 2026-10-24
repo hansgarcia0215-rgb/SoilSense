@@ -7,7 +7,7 @@ import { Wifi, WifiOff, RefreshCw, Thermometer } from 'lucide-react';
 export default function SensorStatus({ sensor, connected, loading, onRefresh }) {
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-gray-400">
+      <div className="flex items-center gap-2 text-sm text-gray-500">
         <RefreshCw className="w-4 h-4 animate-spin" />
         Checking sensor...
       </div>
@@ -20,15 +20,15 @@ export default function SensorStatus({ sensor, connected, loading, onRefresh }) 
         <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 rounded-full bg-gray-300" />
           <span className="text-sm font-semibold text-gray-500">ESP32 Not Connected</span>
-          <WifiOff className="w-4 h-4 text-gray-400 ml-auto" />
+          <WifiOff className="w-4 h-4 text-gray-500 ml-auto" />
         </div>
-        <p className="text-xs text-gray-400 mb-2">
+        <p className="text-xs text-gray-500 mb-2">
           {sensor?.isStale
             ? `Last reading was ${sensor.secondsAgo}s ago — device may have disconnected.`
             : 'No sensor detected. Assessment will use image data only.'}
         </p>
         {sensor && (
-          <p className="text-xs text-gray-400 font-mono">
+          <p className="text-xs text-gray-500 font-mono">
             pH {sensor.soilPH?.toFixed(1)} · {sensor.soilMoisture?.toFixed(0)}%
             {sensor.soilTemperature != null && ` · ${sensor.soilTemperature?.toFixed(1)}°C`}
           </p>
@@ -61,7 +61,7 @@ export default function SensorStatus({ sensor, connected, loading, onRefresh }) 
           <div className="text-xl font-black text-blue-600 tabular-nums">
             {sensor.soilPH?.toFixed(1)}
           </div>
-          <div className="text-[10px] text-gray-400 font-semibold mt-0.5 uppercase tracking-wide">
+          <div className="text-[10px] text-gray-500 font-semibold mt-0.5 uppercase tracking-wide">
             Soil pH
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function SensorStatus({ sensor, connected, loading, onRefresh }) 
           <div className="text-xl font-black text-teal-600 tabular-nums">
             {sensor.soilMoisture?.toFixed(0)}<span className="text-sm font-medium text-gray-300">%</span>
           </div>
-          <div className="text-[10px] text-gray-400 font-semibold mt-0.5 uppercase tracking-wide">
+          <div className="text-[10px] text-gray-500 font-semibold mt-0.5 uppercase tracking-wide">
             Moisture
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function SensorStatus({ sensor, connected, loading, onRefresh }) 
             <div className="text-xl font-black text-orange-500 tabular-nums">
               {sensor.soilTemperature?.toFixed(1)}<span className="text-sm font-medium text-gray-300">°C</span>
             </div>
-            <div className="text-[10px] text-gray-400 font-semibold mt-0.5 uppercase tracking-wide">
+            <div className="text-[10px] text-gray-500 font-semibold mt-0.5 uppercase tracking-wide">
               Temperature
             </div>
           </div>

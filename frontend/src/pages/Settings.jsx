@@ -16,7 +16,7 @@ import { BARANGAYS, MUNICIPALITY, PROVINCE } from '../utils/roxasConfig';
 
 const ROLE_LABELS = {
   farmer: 'Farmer', extension_worker: 'Extension Worker',
-  researcher: 'Researcher', admin: 'Administrator',
+  researcher: 'System Administrator', admin: 'System Administrator',
 };
 
 export default function Settings() {
@@ -116,7 +116,7 @@ export default function Settings() {
             <label className="input-label">Email Address</label>
             <input className="input-field bg-gray-50 text-gray-500"
               value={user?.email || ''} disabled />
-            <p className="text-xs text-gray-400 mt-1">Email cannot be changed here.</p>
+            <p className="text-xs text-gray-500 mt-1">Email cannot be changed here.</p>
           </div>
 
           <div>
@@ -141,7 +141,7 @@ export default function Settings() {
               placeholder="SS-ESP32-001"
               value={profileForm.preferredDeviceId}
               onChange={e => setProfileForm(f => ({ ...f, preferredDeviceId: e.target.value }))} />
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               The device ID your ESP32 sends in its readings. Used by the assessment wizard.
             </p>
           </div>
@@ -167,7 +167,7 @@ export default function Settings() {
                 autoComplete="current-password" />
               <button type="button"
                 onClick={() => setShowPasswords(!showPasswords)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600">
                 {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
@@ -209,7 +209,7 @@ export default function Settings() {
           <div className="flex justify-between"><span>Service Area</span><span>{MUNICIPALITY}, {PROVINCE}</span></div>
           <div className="flex justify-between"><span>System Type</span><span>Preliminary Assessment Tool</span></div>
         </div>
-        <p className="text-xs text-gray-400 mt-3 border-t border-gray-100 pt-3">
+        <p className="text-xs text-gray-500 mt-3 border-t border-gray-100 pt-3">
           SoilSense is a research prototype. All recommendations are preliminary and should be
           validated with laboratory soil analysis and consultation with an agricultural extension officer.
         </p>

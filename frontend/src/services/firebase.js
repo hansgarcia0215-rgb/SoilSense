@@ -16,7 +16,7 @@
  */
 
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 import { getFirestore } from 'firebase/firestore';
 
@@ -38,5 +38,6 @@ const app = initializeApp(firebaseConfig);
 export const auth    = getAuth(app);       // For login, register, logout
 export const storage = getStorage(app);    // For soil image uploads
 export const db      = getFirestore(app);  // For direct Firestore access (optional)
+export const googleProvider = new GoogleAuthProvider(); // For Google sign-in
 
 export default app;

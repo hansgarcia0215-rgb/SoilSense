@@ -55,3 +55,16 @@ logs/
 # ─── Misc ─────────────────────────────────────────────────────────────────────
 .cache/
 coverage/
+
+# Vite PWA dev artifacts
+frontend/dev-dist/
+
+# Compiled seed (contains resolved paths, use seed.cjs directly)
+database/seed/seed.cjs.bak
+
+# Agent task artifacts
+.agents/
+
+# Service account key downloads (any location)
+*firebase-adminsdk*.json
+*serviceAccount*.json

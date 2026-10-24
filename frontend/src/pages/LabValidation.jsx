@@ -90,7 +90,7 @@ export default function LabValidation() {
         <div className="card space-y-3">
           <h3 className="section-title">Select Assessment</h3>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input className="input-field pl-9 text-sm" placeholder="Search by ID or location..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
 
@@ -105,13 +105,13 @@ export default function LabValidation() {
                       className={`w-full text-left px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors ${selected?.assessmentId === a.assessmentId ? 'bg-green-50 border border-green-200' : ''}`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono text-gray-400">{a.assessmentId}</span>
+                        <span className="text-xs font-mono text-gray-500">{a.assessmentId}</span>
                         {a.hasLabValidation && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><Check className="w-3 h-3" /> Validated</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <FertilityBadge classification={a.fertilityClass} size="sm" />
                         <span className="text-xs text-gray-500">{a.location?.barangay || 'Unknown'}</span>
-                        <span className="text-xs text-gray-400">{format(createdAt, 'MMM d')}</span>
+                        <span className="text-xs text-gray-500">{format(createdAt, 'MMM d')}</span>
                       </div>
                     </button>
                   </li>
@@ -124,7 +124,7 @@ export default function LabValidation() {
         {/* Right: Lab form */}
         <div className="card">
           {!selected ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-gray-500">
               <FlaskConical className="w-10 h-10 mx-auto mb-3 text-gray-200" />
               <p className="text-sm">Select an assessment to enter lab results</p>
             </div>
