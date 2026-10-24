@@ -75,10 +75,14 @@ def require_service_api_key():
 # ─── Health Check ─────────────────────────────────────────────────────────────
 @app.route('/health', methods=['GET'])
 def health():
+    requires_key = os.environ.get('REQUIRE_SERVICE_API_KEY', '').lower() == 'true'
+    is_ready = not requires_key or bool(os.environ.get('SERVICE_API_KEY'))
     return jsonify({
         "success": True,
         "service": "SoilSense Image Processing",
-        "status":  "running",
+        "status":  "running" if is_ready else "not_ready",
+        "ready": is_ready,
+        "message": None if is_ready else "SERVICE_API_KEY is not configured.",
         "version": "1.0.0",
     })
 

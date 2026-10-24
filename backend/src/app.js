@@ -38,6 +38,24 @@ const adminRoutes       = require('./routes/admin.routes');
 const { errorHandler }  = require('./utils/errorHandler');
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
+const serviceUrl = (key, productionUrl, localUrl) => {
+  const configuredUrl = process.env[key]?.trim().replace(/\/+$/, '');
+  if (configuredUrl && !(isProduction && /localhost|127\.0\.0\.1/.test(configuredUrl))) {
+    return configuredUrl;
+  }
+  return isProduction ? productionUrl : localUrl;
+};
+const IMAGE_PROCESSING_URL = serviceUrl(
+  'IMAGE_PROCESSING_URL',
+  'https://soilsense-image-processing.onrender.com',
+  'http://localhost:5001'
+);
+const FUZZY_ENGINE_URL = serviceUrl(
+  'FUZZY_ENGINE_URL',
+  'https://soilsense-fuzzy-engine.onrender.com',
+  'http://localhost:5002'
+);
 
 // ─── Security Headers ─────────────────────────────────────────
 // Helmet adds important HTTP security headers automatically
@@ -124,21 +142,42 @@ app.get('/api/health', (req, res) => {
 // Checks if the Python microservices (image processing + fuzzy engine) are reachable
 app.get('/api/health/services', async (req, res) => {
   const axios = require('axios');
-  const IMAGE_PROCESSING_URL = process.env.IMAGE_PROCESSING_URL || 'http://localhost:5001';
-  const FUZZY_ENGINE_URL     = process.env.FUZZY_ENGINE_URL     || 'http://localhost:5002';
-
-  const check = async (url, name) => {
+  const check = async (url, name, expectedService) => {
     try {
-      await axios.get(`${url}/health`, { timeout: 3000 });
+      const response = await axios.get(`${url}/health`, { timeout: 60000 });
+      const service = response.data?.service;
+      if (service !== expectedService) {
+        return {
+          name,
+          status: 'misconfigured',
+          url,
+          message: `Expected ${expectedService}, received ${service || 'unknown service'}.`,
+        };
+      }
+      if (response.data?.ready === false) {
+        return {
+          name,
+          status: 'not_ready',
+          url,
+          message: response.data.message || 'Service is missing required configuration.',
+        };
+      }
       return { name, status: 'online', url };
-    } catch {
-      return { name, status: 'offline', url };
+    } catch (err) {
+      return {
+        name,
+        status: 'offline',
+        url,
+        message: err.response?.status
+          ? `Health check returned HTTP ${err.response.status}.`
+          : 'Health check could not reach the service.',
+      };
     }
   };
 
   const [imgResult, fuzzyResult] = await Promise.all([
-    check(IMAGE_PROCESSING_URL, 'imageProcessing'),
-    check(FUZZY_ENGINE_URL,     'fuzzyEngine'),
+    check(IMAGE_PROCESSING_URL, 'imageProcessing', 'SoilSense Image Processing'),
+    check(FUZZY_ENGINE_URL, 'fuzzyEngine', 'SoilSense Fuzzy Logic Engine'),
   ]);
 
   res.json({
@@ -173,4 +212,3 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 module.exports = app;
-

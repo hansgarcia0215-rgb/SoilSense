@@ -26,8 +26,24 @@ const { db, storage } = require('../firebase/admin');
 const { generateAssessmentId } = require('../utils/assessmentId');
 const { MUNICIPALITY, PROVINCE, REGION, isWithinRoxas } = require('../utils/roxasConfig');
 
-const IMAGE_PROCESSING_URL = process.env.IMAGE_PROCESSING_URL || 'http://localhost:5001';
-const FUZZY_ENGINE_URL     = process.env.FUZZY_ENGINE_URL     || 'http://localhost:5002';
+const isProduction = process.env.NODE_ENV === 'production';
+const serviceUrl = (key, productionUrl, localUrl) => {
+  const configuredUrl = process.env[key]?.trim().replace(/\/+$/, '');
+  if (configuredUrl && !(isProduction && /localhost|127\.0\.0\.1/.test(configuredUrl))) {
+    return configuredUrl;
+  }
+  return isProduction ? productionUrl : localUrl;
+};
+const IMAGE_PROCESSING_URL = serviceUrl(
+  'IMAGE_PROCESSING_URL',
+  'https://soilsense-image-processing.onrender.com',
+  'http://localhost:5001'
+);
+const FUZZY_ENGINE_URL = serviceUrl(
+  'FUZZY_ENGINE_URL',
+  'https://soilsense-fuzzy-engine.onrender.com',
+  'http://localhost:5002'
+);
 const SERVICE_API_KEY      = process.env.SERVICE_API_KEY;
 
 /**

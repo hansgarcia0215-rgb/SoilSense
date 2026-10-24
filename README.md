@@ -192,6 +192,13 @@ backend or its Firebase Admin credentials.
    services can sleep while idle; the first assessment after a period of
    inactivity may take longer while the services start.
 
+If `/api/health/services` reports a service as misconfigured, compare the
+service identity returned by its `/health` endpoint with the expected service.
+In Render, verify that the image-processing service uses root directory
+`image-processing` and the fuzzy-engine service uses `fuzzy-engine`, then
+redeploy each service. The backend ignores localhost service URLs in
+production and uses the Render URLs above when no valid service URL is set.
+
 ---
 
 ## Project Structure

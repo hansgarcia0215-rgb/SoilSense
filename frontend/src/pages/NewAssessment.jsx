@@ -91,8 +91,8 @@ export default function NewAssessment() {
     </div>
   );
 
-  const imgOffline   = serviceHealth?.imageProcessing?.status === 'offline';
-  const fuzzyOffline = serviceHealth?.fuzzyEngine?.status === 'offline';
+  const imgOffline   = !!serviceHealth && serviceHealth.imageProcessing?.status !== 'online';
+  const fuzzyOffline = !!serviceHealth && serviceHealth.fuzzyEngine?.status !== 'online';
   const anyOffline   = imgOffline || fuzzyOffline;
 
   return (
@@ -113,10 +113,18 @@ export default function NewAssessment() {
                         p-4 text-sm animate-scale-in">
           <WifiOff className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-amber-800 mb-1">Some services are offline</p>
+            <p className="font-bold text-amber-800 mb-1">Some services are unavailable</p>
             <ul className="text-xs text-amber-700 space-y-0.5">
-              {imgOffline   && <li>• Image processing (port 5001) — features will use defaults</li>}
-              {fuzzyOffline && <li>• Fuzzy engine (port 5002) — results will use fallback</li>}
+              {imgOffline && (
+                <li>
+                  • Image processing — {serviceHealth?.imageProcessing?.message || 'features will use defaults'}
+                </li>
+              )}
+              {fuzzyOffline && (
+                <li>
+                  • Fuzzy engine — {serviceHealth?.fuzzyEngine?.message || 'results will use fallback'}
+                </li>
+              )}
             </ul>
             <p className="text-xs text-amber-600 mt-1.5">
               You can still proceed but results will have limited accuracy.
