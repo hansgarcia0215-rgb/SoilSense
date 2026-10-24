@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Pencil, Trash2, Leaf, AlertTriangle, X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
@@ -208,7 +209,7 @@ export default function ManageCrops() {
       {showForm && (
         <Modal title={editing ? 'Edit Crop' : 'Add New Crop'} onClose={() => setShowForm(false)}>
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="input-label">Crop Name *</label>
                 <input className="input-field" value={form.cropName}
@@ -229,7 +230,7 @@ export default function ManageCrops() {
 
             <div className="border-t border-gray-100 pt-4">
               <p className="text-sm font-bold text-gray-700 mb-3">Soil Requirements</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="input-label">pH Min</label>
                   <input type="number" step="0.1" min="0" max="14" className="input-field"
@@ -267,7 +268,7 @@ export default function ManageCrops() {
                     onChange={e => setReq('moistureMax', parseInt(e.target.value))} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 <div>
                   <label className="input-label">Minimum Fertility</label>
                   <select className="input-field" value={form.requirements.fertilityMin}
@@ -290,7 +291,7 @@ export default function ManageCrops() {
               <p className="text-sm font-bold text-gray-700 mb-1">Suitability Weights
                 <span className="text-xs font-normal text-gray-500 ml-2">(must sum to 1.0)</span>
               </p>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {Object.entries(form.suitabilityWeights).map(([key, val]) => (
                   <div key={key}>
                     <label className="input-label capitalize text-xs">{key}</label>
@@ -304,7 +305,7 @@ export default function ManageCrops() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="input-label">Data Source / Reference</label>
                 <input className="input-field text-sm" value={form.dataSource}
@@ -350,17 +351,18 @@ export default function ManageCrops() {
 }
 
 function Modal({ title, children, onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-4">
+      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:max-h-[calc(100dvh-2rem)]">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6">
           <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

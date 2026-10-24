@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Pencil, Trash2, X, Save, ToggleLeft, ToggleRight, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
@@ -219,7 +220,7 @@ export default function ManageFuzzyRules() {
               {' '}(strength: {form.strength})
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="input-label">Rule ID *</label>
                 <input className="input-field font-mono" value={form.ruleId}
@@ -234,7 +235,7 @@ export default function ManageFuzzyRules() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label className="input-label">pH Fuzzy Set</label>
                 <select className="input-field" value={form.ph}
@@ -312,17 +313,18 @@ export default function ManageFuzzyRules() {
 }
 
 function Modal({ title, children, onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-4">
+      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl sm:max-h-[calc(100dvh-2rem)]">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6">
           <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

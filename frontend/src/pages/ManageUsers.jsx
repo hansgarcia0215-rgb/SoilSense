@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search, Pencil, X, Save, Shield, UserCheck, UserX, UserPlus,
   Trash2, AlertTriangle, Eye, EyeOff,
@@ -338,15 +339,14 @@ export default function ManageUsers() {
 
       {/* ── Edit Modal ── */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-cream-card rounded-3xl shadow-card-lg w-full max-w-sm">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-cream-border">
+        <AdminModal panelClassName="max-w-sm">
+            <div className="flex shrink-0 items-center justify-between border-b border-cream-border px-5 py-4 sm:px-6">
               <h3 className="font-display font-black text-lg">Edit User</h3>
               <button onClick={() => setEditing(null)} className="p-1 hover:bg-cream-sand rounded-lg">
                 <X className="w-5 h-5 text-ink-faint" />
               </button>
             </div>
-            <div className="px-6 py-5 space-y-4">
+            <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 space-y-4">
               <div>
                 <p className="font-semibold text-gray-900">{editing.displayName}</p>
                 <p className="text-sm text-gray-500">{editing.email}</p>
@@ -378,21 +378,19 @@ export default function ManageUsers() {
                 <button onClick={() => setEditing(null)} className="btn-secondary flex-1">Cancel</button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminModal>
       )}
 
       {/* ── Create Modal ── */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-cream-card rounded-3xl shadow-card-lg w-full max-w-md max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-cream-border sticky top-0 bg-cream-card rounded-t-3xl">
+        <AdminModal panelClassName="max-w-md">
+            <div className="flex shrink-0 items-center justify-between rounded-t-3xl border-b border-cream-border bg-cream-card px-5 py-4 sm:px-6">
               <h3 className="font-display font-black text-lg">Create Account</h3>
               <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-cream-sand rounded-lg">
                 <X className="w-5 h-5 text-ink-faint" />
               </button>
             </div>
-            <div className="px-6 py-5 space-y-4">
+            <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6 space-y-4">
 
               <div>
                 <label className="input-label">Full Name</label>
@@ -469,14 +467,12 @@ export default function ManageUsers() {
                 <button onClick={() => setShowCreate(false)} className="btn-secondary flex-1">Cancel</button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminModal>
       )}
 
       {/* ── Delete Confirm Modal ── */}
       {deleting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-cream-card rounded-3xl shadow-card-lg w-full max-w-sm">
+        <AdminModal panelClassName="max-w-sm">
             <div className="px-6 py-5">
               <div className="w-12 h-12 rounded-2xl bg-[#f5e0da] flex items-center justify-center mb-4">
                 <AlertTriangle className="w-6 h-6 text-[#a8402f]" />
@@ -493,10 +489,24 @@ export default function ManageUsers() {
                 <button onClick={() => setDeleting(null)} className="btn-secondary flex-1">Cancel</button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminModal>
       )}
 
     </div>
+  );
+}
+
+function AdminModal({ children, panelClassName }) {
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/40 p-3 sm:p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-3xl bg-cream-card shadow-card-lg sm:max-h-[calc(100dvh-2rem)] ${panelClassName}`}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body
   );
 }
