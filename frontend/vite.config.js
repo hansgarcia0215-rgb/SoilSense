@@ -61,7 +61,7 @@ export default defineConfig({
           },
         ],
 
-        navigateFallback: '/offline.html',
+        navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
         skipWaiting: true,
         clientsClaim: true,
