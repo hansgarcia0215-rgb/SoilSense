@@ -26,7 +26,7 @@ async function syncProfile(req, res, next) {
   try {
     const uid = req.user.uid;
     const {
-      displayName, email, role, barangay,
+      displayName, email, barangay,
       municipality, province, photoURL,
     } = req.body;
 
@@ -46,7 +46,7 @@ async function syncProfile(req, res, next) {
         uid,
         displayName:  (displayName || '').trim(),
         email:        email || req.user.email || '',
-        role:         role || 'farmer',
+        role:         'farmer',
         barangay:     barangay || '',
         municipality: municipality || MUNICIPALITY,
         province:     province    || PROVINCE,

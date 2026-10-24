@@ -10,12 +10,6 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { BARANGAYS, MUNICIPALITY, PROVINCE } from '../utils/roxasConfig';
 import AppLogo from '../components/common/AppLogo';
 
-const ROLES = [
-  { value: 'farmer',           icon: '👨‍🌾', label: 'Farmer',          desc: 'I want to assess my soil' },
-  { value: 'extension_worker', icon: '🌾',  label: 'Extension Worker', desc: 'I review farm assessments' },
-  { value: 'researcher',       icon: '🔬',  label: 'Researcher',       desc: 'I analyze data and manage the system' },
-];
-
 function firebaseErrorMsg(code) {
   const map = {
     'auth/email-already-in-use': 'This email is already registered. Please sign in instead.',
@@ -32,7 +26,7 @@ export default function Register() {
 
   const [formData, setFormData] = useState({
     displayName: '', email: '', password: '', confirmPassword: '',
-    role: 'farmer', barangay: '', municipality: MUNICIPALITY, province: PROVINCE,
+    barangay: '', municipality: MUNICIPALITY, province: PROVINCE,
   });
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState(false);
@@ -68,7 +62,6 @@ export default function Register() {
         displayName:  formData.displayName.trim(),
         email:        formData.email.trim().toLowerCase(),
         password:     formData.password,
-        role:         formData.role,
         barangay:     formData.barangay,
         municipality: formData.municipality,
         province:     formData.province,
@@ -215,28 +208,6 @@ export default function Register() {
                 )}
               </div>
               {fe('confirmPassword')}
-            </div>
-
-            {/* Role selector */}
-            <div>
-              <label className="input-label">I am a...</label>
-              <div className="grid grid-cols-3 gap-2">
-                {ROLES.map(r => (
-                  <button key={r.value} type="button"
-                    onClick={() => setFormData(p => ({ ...p, role: r.value }))}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2
-                                text-center transition-all duration-200 hover:scale-[1.02]
-                                ${formData.role === r.value
-                                  ? 'border-green-500 bg-green-50 shadow-glow-sm'
-                                  : 'border-gray-200 bg-white hover:border-green-300'}`}>
-                    <span className="text-xl">{r.icon}</span>
-                    <span className={`text-xs font-bold leading-tight
-                                     ${formData.role === r.value ? 'text-green-700' : 'text-gray-600'}`}>
-                      {r.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Barangay */}

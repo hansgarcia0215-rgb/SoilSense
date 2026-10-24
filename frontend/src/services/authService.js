@@ -20,7 +20,7 @@ import api from './api';
 const authService = {
 
   // ─── Register with Email/Password ────────────────────────────
-  async register({ displayName, email, password, role, barangay, municipality, province }) {
+  async register({ displayName, email, password, barangay, municipality, province }) {
     // 1. Create Firebase Auth account
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const user       = credential.user;
@@ -37,7 +37,7 @@ const authService = {
       uid:          user.uid,
       displayName,
       email:        user.email,
-      role:         role || 'farmer',
+      role:         'farmer',
       barangay:     barangay || '',
       municipality: municipality || 'Roxas',
       province:     province     || 'Oriental Mindoro',

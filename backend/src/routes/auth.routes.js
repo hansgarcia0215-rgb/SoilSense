@@ -26,7 +26,6 @@ router.post('/sync-profile',
   [
     body('displayName').trim().notEmpty().withMessage('Display name is required.')
       .isLength({ max: 100 }),
-    body('role').optional().isIn(['farmer','extension_worker','researcher','admin']),
     body('barangay').optional().trim(),
   ],
   validate,

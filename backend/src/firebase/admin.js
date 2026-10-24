@@ -16,6 +16,7 @@
  */
 
 const admin = require('firebase-admin');
+const { createPrivateKey } = require('crypto');
 
 // Only initialize once — prevents duplicate app error during hot reload
 if (!admin.apps.length) {
@@ -36,12 +37,23 @@ if (!admin.apps.length) {
     throw new Error('Firebase credentials not configured. See backend/.env for instructions.');
   }
 
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    .replace(/\\n/g, '\n')
+    .trim();
+
+  try {
+    createPrivateKey(privateKey);
+  } catch {
+    throw new Error(
+      'FIREBASE_PRIVATE_KEY is not a valid PEM key. Copy the private_key value from a Firebase service account JSON file into backend/.env, preserving its BEGIN/END lines and replacing escaped \\n with newlines.'
+    );
+  }
+
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId:    process.env.FIREBASE_PROJECT_ID,
       clientEmail:  process.env.FIREBASE_CLIENT_EMAIL,
-      // Replace literal \n in the private key string (env vars flatten newlines)
-      privateKey:   process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      privateKey,
     }),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
