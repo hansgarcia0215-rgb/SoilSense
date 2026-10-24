@@ -27,9 +27,9 @@ services:
       - key: ESP32_DEVICE_API_KEY
         sync: false
       - key: IMAGE_PROCESSING_URL
-        sync: false
+        value: https://soilsense-image-processing.onrender.com
       - key: FUZZY_ENGINE_URL
-        sync: false
+        value: https://soilsense-fuzzy-engine.onrender.com
       - key: SERVICE_API_KEY
         sync: false
 
