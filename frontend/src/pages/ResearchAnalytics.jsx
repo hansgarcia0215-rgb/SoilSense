@@ -10,7 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie, Legend
 } from 'recharts';
-import { FlaskConical, Clock, Target, TrendingUp, Download, Sprout } from 'lucide-react';
+import { Clock, Target, TrendingUp, Download, Sprout, CalendarDays } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -20,20 +20,17 @@ const FERTILITY_COLORS = { fertile: '#d8ff70', moderate: '#e2cfa4', poor: '#c96a
 
 export default function ResearchAnalytics() {
   const [summary, setSummary]     = useState(null);
-  const [accuracy, setAccuracy]   = useState(null);
   const [timing, setTiming]       = useState(null);
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [sumRes, accRes, timeRes] = await Promise.all([
+        const [sumRes, timeRes] = await Promise.all([
           api.get('/analytics/summary'),
-          api.get('/analytics/accuracy'),
           api.get('/analytics/processing-times'),
         ]);
         setSummary(sumRes.data.data);
-        setAccuracy(accRes.data.data);
         setTiming(timeRes.data.data);
       } catch (err) {
         console.error('Analytics load error:', err);
@@ -55,8 +52,6 @@ export default function ResearchAnalytics() {
         name: k.charAt(0).toUpperCase() + k.slice(1), value: v, key: k,
       }))
     : [];
-
-  const classNames = ['poor', 'moderate', 'fertile'];
 
   const handleExport = async () => {
     try {
@@ -82,7 +77,7 @@ export default function ResearchAnalytics() {
       <div className="flex items-center justify-between flex-wrap gap-3 animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Research Analytics</h1>
-          <p className="text-sm text-gray-500 mt-0.5">System performance, accuracy metrics, and data distribution</p>
+          <p className="text-sm text-gray-500 mt-0.5">Assessment trends, fertility insights, and system performance</p>
         </div>
         <button onClick={handleExport}
           className="btn-secondary text-sm hover:shadow-sm">
@@ -93,8 +88,8 @@ export default function ResearchAnalytics() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={<Target className="w-5 h-5 text-green-600" />}  iconBg="bg-green-100" label="Total Assessments"   value={summary?.totalAssessments ?? '—'} />
-        <StatCard icon={<FlaskConical className="w-5 h-5 text-blue-600" />}  iconBg="bg-blue-100" label="Lab Validated"   value={accuracy?.totalValidated ?? 0} />
-        <StatCard icon={<TrendingUp className="w-5 h-5 text-amber-600" />} iconBg="bg-amber-100" label="Classification Accuracy" value={accuracy?.accuracy != null ? `${accuracy.accuracy}%` : '—'} />
+        <StatCard icon={<CalendarDays className="w-5 h-5 text-blue-600" />} iconBg="bg-blue-100" label="Assessments This Week" value={summary?.thisWeek ?? '—'} />
+        <StatCard icon={<TrendingUp className="w-5 h-5 text-amber-600" />} iconBg="bg-amber-100" label="Average Fertility Score" value={summary?.avgFertilityScore != null ? `${summary.avgFertilityScore}/100` : '—'} />
         <StatCard icon={<Clock className="w-5 h-5 text-purple-600" />}  iconBg="bg-purple-100" label="Avg Processing Time"  value={timing?.avgTotalMs != null ? `${(timing.avgTotalMs/1000).toFixed(1)}s` : '—'} />
       </div>
 
@@ -165,44 +160,6 @@ export default function ResearchAnalytics() {
           )}
         </div>
       </div>
-
-      {/* Confusion matrix */}
-      {accuracy?.confusionMatrix && accuracy.totalValidated > 0 && (
-        <div className="card">
-          <h3 className="section-title">Confusion Matrix</h3>
-          <p className="text-xs text-gray-500 mb-3">Rows = actual lab class · Columns = SoilSense predicted class</p>
-          <div className="overflow-x-auto">
-            <table className="text-sm text-center">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 text-xs text-gray-500 font-normal">Actual ↓ / Predicted →</th>
-                  {classNames.map(c => (
-                    <th key={c} className="px-4 py-2 font-bold capitalize text-gray-700">{c}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {classNames.map(actual => (
-                  <tr key={actual}>
-                    <td className="px-4 py-2 font-bold capitalize text-gray-700 text-right">{actual}</td>
-                    {classNames.map(predicted => {
-                      const val = accuracy.confusionMatrix[actual]?.[predicted] ?? 0;
-                      const isDiag = actual === predicted;
-                      return (
-                        <td key={predicted} className={`px-4 py-2 font-bold rounded
-                          ${isDiag && val > 0 ? 'bg-green-100 text-green-700' :
-                            !isDiag && val > 0 ? 'bg-red-100 text-red-600' : 'text-gray-300'}`}>
-                          {val}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Processing times */}
       {timing && (

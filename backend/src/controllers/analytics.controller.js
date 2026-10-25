@@ -92,7 +92,9 @@ async function getSummary(req, res, next) {
       data: {
         totalAssessments: assessments.length,
         thisWeek,
-        avgFertilityScore: avgFertilityScore ? Math.round(avgFertilityScore * 10) / 10 : null,
+        avgFertilityScore: avgFertilityScore != null
+          ? Math.round(avgFertilityScore * 10) / 10
+          : null,
         topRecommendedCrop,
         topRecommendedCrops,
         fertilityDistribution: distribution,
