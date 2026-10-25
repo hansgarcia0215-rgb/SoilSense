@@ -19,6 +19,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,webmanifest}'],
 
         runtimeCaching: [
+          // Service availability changes during Render cold starts; never cache a stale result.
+          {
+            urlPattern: /^https?:\/\/.*\/api\/health\/services(?:\?.*)?$/,
+            handler: 'NetworkOnly',
+          },
           // API — network first, fall back to cache
           {
             urlPattern: /^https?:\/\/.*\/api\//,
