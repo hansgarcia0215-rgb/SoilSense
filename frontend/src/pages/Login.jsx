@@ -5,14 +5,14 @@
 
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2, Mail, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import authService from '../services/authService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AppLogo from '../components/common/AppLogo';
 
 // Map Firebase error codes to friendly messages
-function firebaseErrorMsg(code) {
+function firebaseErrorMsg(code, fallback = 'Sign-in failed. Please try again.') {
   const map = {
     'auth/wrong-password':        'Incorrect password. Please try again.',
     'auth/user-not-found':        'No account found with this email.',
@@ -27,7 +27,7 @@ function firebaseErrorMsg(code) {
     'auth/popup-closed-by-user':  'Google sign-in was cancelled.',
     'auth/cancelled-popup-request':'Google sign-in was cancelled.',
   };
-  return map[code] || 'Sign-in failed. Please try again.';
+  return map[code] || fallback;
 }
 
 export default function Login() {
@@ -40,6 +40,8 @@ export default function Login() {
   const [showPw, setShowPw]       = useState(false);
   const [loading, setLoading]     = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [error, setError]         = useState('');
@@ -48,15 +50,21 @@ export default function Login() {
 
   const handleChange = (e) => {
     setError('');
-    setResetError('');
-    setResetSent(false);
     setForm(p => ({ ...p, [e.target.name]: e.target.value }));
   };
 
-  const handleForgotPassword = async () => {
-    const email = form.email.trim();
+  const openResetModal = () => {
+    setResetEmail(form.email.trim());
+    setResetError('');
+    setResetSent(false);
+    setShowResetModal(true);
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    const email = resetEmail.trim();
     if (!email) {
-      setResetError('Enter your email address above to receive a password reset link.');
+      setResetError('Enter your email address to receive a password reset link.');
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -73,7 +81,7 @@ export default function Login() {
       if (err.code === 'auth/user-not-found') {
         setResetSent(true);
       } else {
-        setResetError(firebaseErrorMsg(err.code));
+        setResetError(firebaseErrorMsg(err.code, 'Unable to send the reset email. Please try again.'));
       }
     } finally {
       setResetLoading(false);
@@ -240,25 +248,13 @@ export default function Login() {
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
-                  onClick={handleForgotPassword}
-                  disabled={resetLoading || loading || googleLoading}
+                  onClick={openResetModal}
+                  disabled={loading || googleLoading}
                   className="text-xs font-bold text-green-700 hover:text-green-800 disabled:opacity-50"
                 >
-                  {resetLoading ? 'Sending link...' : 'Forgot password?'}
+                  Forgot password?
                 </button>
               </div>
-              {resetSent && (
-                <div role="status" className="mt-2 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  If an account exists for this email, Firebase has sent a password reset link. Check your inbox and spam folder.
-                </div>
-              )}
-              {resetError && (
-                <div role="alert" className="mt-2 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {resetError}
-                </div>
-              )}
             </div>
 
             <button type="submit" disabled={loading || success}
@@ -283,6 +279,111 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      {showResetModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !resetLoading) setShowResetModal(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-password-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-scale-in"
+          >
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 id="reset-password-title" className="text-lg font-black text-gray-900">
+                    Reset your password
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Enter your account email and we’ll send you a reset link.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Close password reset dialog"
+                onClick={() => setShowResetModal(false)}
+                disabled={resetLoading}
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {resetSent ? (
+              <div role="status" className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                <p>
+                  If an account exists for this email, Firebase has sent a password reset link. Check your inbox and spam folder.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} noValidate>
+                <label htmlFor="reset-email" className="input-label">Email Address</label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  className="input-field"
+                  placeholder="you@example.com"
+                  value={resetEmail}
+                  onChange={(e) => {
+                    setResetEmail(e.target.value);
+                    setResetError('');
+                  }}
+                  disabled={resetLoading}
+                />
+
+                {resetError && (
+                  <div role="alert" className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    {resetError}
+                  </div>
+                )}
+
+                <div className="mt-5 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(false)}
+                    disabled={resetLoading}
+                    className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetLoading}
+                    className="flex min-w-36 items-center justify-center gap-2 rounded-xl bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800 disabled:opacity-60"
+                  >
+                    {resetLoading ? <LoadingSpinner size="sm" color="white" /> : 'Send reset link'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {resetSent && (
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(false)}
+                  className="rounded-xl bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }
