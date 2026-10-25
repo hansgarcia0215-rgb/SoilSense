@@ -263,12 +263,14 @@ export default function MapView() {
         const longitude = Number(assessment.location.longitude);
         const fertility = normalizedClass(assessment.fertilityClass);
         const color = FERTILITY[fertility]?.color || '#6b7280';
-        const marker = leaflet.circleMarker([latitude, longitude], {
-          radius: 9,
-          fillColor: color,
-          fillOpacity: 0.88,
-          color: '#fff',
-          weight: 2,
+        const marker = leaflet.marker([latitude, longitude], {
+          icon: leaflet.divIcon({
+            className: 'soilsense-assessment-pin',
+            html: `<span style="display:block;width:24px;height:24px;border:3px solid #fff;border-radius:50% 50% 50% 0;background:${color};box-shadow:0 2px 8px #0006;transform:rotate(-45deg)"><span style="display:block;width:6px;height:6px;margin:6px auto;border-radius:50%;background:#fff"></span></span>`,
+            iconSize: [30, 38],
+            iconAnchor: [15, 36],
+            popupAnchor: [0, -34],
+          }),
         });
         marker.bindTooltip(
           `${assessment.assessmentId || 'Assessment'} · ${FERTILITY[fertility]?.label || 'Unclassified'}`,
