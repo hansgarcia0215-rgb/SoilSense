@@ -5,8 +5,9 @@
 
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import AppLogo from '../components/common/AppLogo';
 
@@ -18,6 +19,9 @@ function firebaseErrorMsg(code) {
     'auth/invalid-credential':    'Incorrect email or password. Please try again.',
     'auth/invalid-email':         'Please enter a valid email address.',
     'auth/user-disabled':         'This account has been disabled.',
+    'auth/expired-action-code':   'This password reset link has expired. Request a new one.',
+    'auth/invalid-action-code':   'This password reset link is invalid. Request a new one.',
+    'auth/operation-not-allowed': 'Password reset is not enabled. Please contact support.',
     'auth/too-many-requests':     'Too many attempts. Please wait and try again.',
     'auth/network-request-failed':'Network error. Check your connection.',
     'auth/popup-closed-by-user':  'Google sign-in was cancelled.',
@@ -36,12 +40,44 @@ export default function Login() {
   const [showPw, setShowPw]       = useState(false);
   const [loading, setLoading]     = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [error, setError]         = useState('');
+  const [resetError, setResetError] = useState('');
   const [success, setSuccess]     = useState(false);
 
   const handleChange = (e) => {
     setError('');
+    setResetError('');
+    setResetSent(false);
     setForm(p => ({ ...p, [e.target.name]: e.target.value }));
+  };
+
+  const handleForgotPassword = async () => {
+    const email = form.email.trim();
+    if (!email) {
+      setResetError('Enter your email address above to receive a password reset link.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setResetError('Please enter a valid email address.');
+      return;
+    }
+
+    setResetError('');
+    setResetLoading(true);
+    try {
+      await authService.sendPasswordReset(email);
+      setResetSent(true);
+    } catch (err) {
+      if (err.code === 'auth/user-not-found') {
+        setResetSent(true);
+      } else {
+        setResetError(firebaseErrorMsg(err.code));
+      }
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   // ── Email / Password login ────────────────────────────────────
@@ -148,6 +184,20 @@ export default function Login() {
             </div>
           )}
 
+          {resetSent && (
+            <div role="status" className="mb-5 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              If an account exists for this email, Firebase has sent a password reset link. Check your inbox and spam folder.
+            </div>
+          )}
+
+          {resetError && (
+            <div role="alert" className="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              {resetError}
+            </div>
+          )}
+
           {/* ── Google sign-in ─────────────────────────────── */}
           <button
             type="button"
@@ -189,7 +239,17 @@ export default function Login() {
                 value={form.email} onChange={handleChange} disabled={loading} />
             </div>
             <div>
-              <label className="input-label">Password</label>
+              <div className="mb-1 flex items-center justify-between">
+                <label className="input-label mb-0">Password</label>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading || loading || googleLoading}
+                  className="text-xs font-bold text-green-700 hover:text-green-800 disabled:opacity-50"
+                >
+                  {resetLoading ? 'Sending link...' : 'Forgot password?'}
+                </button>
+              </div>
               <div className="relative">
                 <input name="password" type={showPw ? 'text' : 'password'}
                   autoComplete="current-password"
