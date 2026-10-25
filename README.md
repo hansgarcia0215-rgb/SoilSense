@@ -284,7 +284,7 @@ SOILSENSE/
 - ✅ Rootcrop suitability ranking (Best / Second Best / Not Suitable)
 - ✅ Fertilizer recommendations
 - ✅ Assessment history with filtering
-- ✅ Interactive map (Leaflet/OpenStreetMap)
+- ✅ Assessment map with GPS pins, fertility filters, score summaries, and barangay snapshots (Leaflet/OpenStreetMap; latest 100 records)
 - ✅ Laboratory validation module
 - ✅ Research analytics dashboard with accuracy metrics
 - ✅ PDF report generation
