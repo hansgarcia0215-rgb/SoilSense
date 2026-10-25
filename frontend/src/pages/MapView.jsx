@@ -5,12 +5,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Activity, CalendarDays, LocateFixed, MapPin, Plus, RefreshCw,
+  Activity, AlertTriangle, CalendarDays, LocateFixed, MapPin, Plus, RefreshCw,
   Search, Sprout, TrendingUp,
 } from 'lucide-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import assessmentService from '../services/assessmentService';
-import { DEFAULT_ZOOM, MUNICIPALITY, PROVINCE, ROXAS_CENTER, ROXAS_LEAFLET_BOUNDS } from '../utils/roxasConfig';
+import {
+  DEFAULT_ZOOM, MUNICIPALITY, PROVINCE, ROXAS_BOUNDS, ROXAS_CENTER, ROXAS_LEAFLET_BOUNDS,
+} from '../utils/roxasConfig';
 
 const FERTILITY = {
   fertile: { label: 'Fertile', color: '#22c55e' },
@@ -48,6 +50,17 @@ function normalizedClass(value) {
   return FERTILITY[key] ? key : 'unknown';
 }
 
+function isWithinServiceArea(assessment) {
+  if (typeof assessment.location?.withinServiceArea === 'boolean') {
+    return assessment.location.withinServiceArea;
+  }
+
+  const latitude = Number(assessment.location?.latitude);
+  const longitude = Number(assessment.location?.longitude);
+  return latitude >= ROXAS_BOUNDS.minLat && latitude <= ROXAS_BOUNDS.maxLat
+    && longitude >= ROXAS_BOUNDS.minLng && longitude <= ROXAS_BOUNDS.maxLng;
+}
+
 function StatCard({ icon: Icon, label, value, helper, iconClass = 'text-green-700 bg-green-50' }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
@@ -80,9 +93,16 @@ function createPopup(leaflet, assessment, navigate) {
   const details = [
     `Score: ${assessment.fertilityScore ?? '—'} / 100`,
     assessment.location?.barangay || 'Barangay not recorded',
+    `GPS: ${Number(assessment.location.latitude).toFixed(6)}, ${Number(assessment.location.longitude).toFixed(6)}`,
     formatDate(assessment.createdAt),
     assessment.bestRootcrop ? `Top crop: ${assessment.bestRootcrop}` : null,
   ].filter(Boolean);
+
+  if (!isWithinServiceArea(assessment)) {
+    const warning = leaflet.DomUtil.create('div', '', popup);
+    warning.textContent = 'Outside Roxas service area';
+    warning.style.cssText = 'margin-top:7px;padding:5px 7px;border-radius:6px;background:#fff7ed;color:#c2410c;font-size:11px;font-weight:700';
+  }
 
   details.forEach(text => {
     const line = leaflet.DomUtil.create('div', '', popup);
@@ -132,6 +152,11 @@ export default function MapView() {
   const mappedAssessments = useMemo(
     () => assessments.filter(hasCoordinates),
     [assessments]
+  );
+
+  const outsideAreaAssessments = useMemo(
+    () => mappedAssessments.filter(assessment => !isWithinServiceArea(assessment)),
+    [mappedAssessments]
   );
 
   const barangays = useMemo(() => [...new Set(
@@ -214,9 +239,6 @@ export default function MapView() {
         center: ROXAS_CENTER,
         zoom: DEFAULT_ZOOM,
         zoomControl: true,
-        maxBounds: ROXAS_LEAFLET_BOUNDS,
-        maxBoundsViscosity: 0.7,
-        minZoom: 11,
       });
       leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -263,17 +285,18 @@ export default function MapView() {
         const longitude = Number(assessment.location.longitude);
         const fertility = normalizedClass(assessment.fertilityClass);
         const color = FERTILITY[fertility]?.color || '#6b7280';
+        const outsideArea = !isWithinServiceArea(assessment);
         const marker = leaflet.marker([latitude, longitude], {
           icon: leaflet.divIcon({
             className: 'soilsense-assessment-pin',
-            html: `<span style="display:block;width:24px;height:24px;border:3px solid #fff;border-radius:50% 50% 50% 0;background:${color};box-shadow:0 2px 8px #0006;transform:rotate(-45deg)"><span style="display:block;width:6px;height:6px;margin:6px auto;border-radius:50%;background:#fff"></span></span>`,
-            iconSize: [30, 38],
-            iconAnchor: [15, 36],
-            popupAnchor: [0, -34],
+            html: `<span style="position:relative;display:block;width:24px;height:24px;border:3px solid ${outsideArea ? '#c2410c' : '#fff'};border-radius:50% 50% 50% 0;background:${color};box-shadow:0 2px 8px #0006;transform:rotate(-45deg)"><span style="display:block;width:6px;height:6px;margin:6px auto;border-radius:50%;background:#fff"></span>${outsideArea ? '<span style="position:absolute;top:-9px;right:-13px;display:flex;width:16px;height:16px;align-items:center;justify-content:center;border:1px solid white;border-radius:50%;background:#c2410c;color:#fff;font:bold 11px sans-serif;transform:rotate(45deg)">!</span>' : ''}</span>`,
+            iconSize: outsideArea ? [40, 42] : [30, 38],
+            iconAnchor: outsideArea ? [20, 40] : [15, 36],
+            popupAnchor: [0, -38],
           }),
         });
         marker.bindTooltip(
-          `${assessment.assessmentId || 'Assessment'} · ${FERTILITY[fertility]?.label || 'Unclassified'}`,
+          `${assessment.assessmentId || 'Assessment'} · ${FERTILITY[fertility]?.label || 'Unclassified'}${outsideArea ? ' · Outside Roxas service area' : ''}`,
           { direction: 'top', offset: [0, -7] }
         );
         marker.bindPopup(createPopup(leaflet, assessment, navigate));
@@ -282,9 +305,9 @@ export default function MapView() {
       });
 
       if (bounds.length > 1) {
-        map.fitBounds(bounds, { padding: [32, 32], maxZoom: 14 });
+        map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
       } else if (bounds.length === 1) {
-        map.setView(bounds[0], Math.max(map.getZoom(), 14));
+        map.setView(bounds[0], 14);
       } else {
         map.setView(ROXAS_CENTER, DEFAULT_ZOOM);
       }
@@ -338,6 +361,23 @@ export default function MapView() {
           <button type="button" onClick={() => setRefreshKey(value => value + 1)} className="font-bold underline">
             Retry
           </button>
+        </div>
+      )}
+
+      {outsideAreaAssessments.length > 0 && (
+        <div role="status" className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-bold">
+              {outsideAreaAssessments.length} mapped assessment{outsideAreaAssessments.length === 1 ? '' : 's'} outside the Roxas service area
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-800">
+              These GPS points are shown on the map with an alert pin. SoilSense recommendations are calibrated for Roxas; verify the recorded location before relying on results from outside the service area.
+              {outsideAreaAssessments.length === 1 && (
+                <> Latest point: {Number(outsideAreaAssessments[0].location.latitude).toFixed(6)}, {Number(outsideAreaAssessments[0].location.longitude).toFixed(6)}.</>
+              )}
+            </p>
+          </div>
         </div>
       )}
 
