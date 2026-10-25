@@ -10,7 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie, Legend
 } from 'recharts';
-import { FlaskConical, Clock, Target, TrendingUp, Download } from 'lucide-react';
+import { FlaskConical, Clock, Target, TrendingUp, Download, Sprout } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -119,47 +119,48 @@ export default function ResearchAnalytics() {
           ) : <p className="text-sm text-gray-500 text-center py-8">No data yet</p>}
         </div>
 
-        {/* Accuracy metrics */}
+        {/* Most recommended crops */}
         <div className="card">
-          <h3 className="section-title">Per-Class Accuracy Metrics</h3>
-          {accuracy?.totalValidated > 0 ? (
-            <div className="space-y-3">
-              {classNames.map(cls => {
-                const p = accuracy.precision?.[cls];
-                const r = accuracy.recall?.[cls];
-                const f = accuracy.f1Score?.[cls];
-                if (p == null) return null;
-                return (
-                  <div key={cls}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold capitalize text-gray-700">{cls}</span>
-                      <span className="text-xs text-gray-500">F1: {f != null ? (f*100).toFixed(1)+'%' : '—'}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <div className="text-xs text-gray-500 mb-0.5">Precision</div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-400 rounded-full" style={{ width: `${(p*100).toFixed(1)}%` }} />
-                        </div>
-                        <div className="text-xs text-gray-600 mt-0.5">{(p*100).toFixed(1)}%</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-500 mb-0.5">Recall</div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-green-400 rounded-full" style={{ width: `${(r*100).toFixed(1)}%` }} />
-                        </div>
-                        <div className="text-xs text-gray-600 mt-0.5">{(r*100).toFixed(1)}%</div>
-                      </div>
-                    </div>
+          <h3 className="section-title">Most Recommended Crops</h3>
+          {summary?.topRecommendedCrops?.length > 0 ? (
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500">
+                Crops ranked first across completed soil assessments.
+              </p>
+              {summary.topRecommendedCrops.map((crop, index) => (
+                <div key={crop.cropName}>
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-gray-700">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-700">
+                        <Sprout className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="truncate">{crop.cropName}</span>
+                    </span>
+                    <span className="shrink-0 text-xs font-semibold text-gray-500">
+                      {crop.count} assessment{crop.count === 1 ? '' : 's'} · {crop.percentage}%
+                    </span>
                   </div>
-                );
-              })}
+                  <div
+                    className="h-2 overflow-hidden rounded-full bg-gray-100"
+                    role="progressbar"
+                    aria-label={`${crop.cropName} recommendation share`}
+                    aria-valuenow={crop.percentage}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div
+                      className={`h-full rounded-full ${index === 0 ? 'bg-green-600' : 'bg-green-300'}`}
+                      style={{ width: `${crop.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <FlaskConical className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No lab validation data yet.</p>
-              <p className="text-xs text-gray-500 mt-1">Enter lab results from the Lab Validation page.</p>
+              <Sprout className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">No crop recommendations yet.</p>
+              <p className="mt-1 text-xs text-gray-500">Completed assessments will show the most frequently recommended crops here.</p>
             </div>
           )}
         </div>

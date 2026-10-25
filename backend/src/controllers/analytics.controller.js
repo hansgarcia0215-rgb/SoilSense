@@ -67,6 +67,18 @@ async function getSummary(req, res, next) {
     const topRecommendedCrop = Object.keys(cropCounts).length > 0
       ? Object.keys(cropCounts).reduce((a, b) => cropCounts[a] > cropCounts[b] ? a : b)
       : null;
+    const cropRecommendationCount = Object.values(cropCounts)
+      .reduce((total, count) => total + count, 0);
+    const topRecommendedCrops = Object.entries(cropCounts)
+      .map(([cropName, count]) => ({
+        cropName,
+        count,
+        percentage: cropRecommendationCount
+          ? Math.round((count / cropRecommendationCount) * 100)
+          : 0,
+      }))
+      .sort((a, b) => b.count - a.count || a.cropName.localeCompare(b.cropName))
+      .slice(0, 5);
 
     // Fertility distribution
     const distribution = { fertile: 0, moderate: 0, poor: 0 };
@@ -82,6 +94,7 @@ async function getSummary(req, res, next) {
         thisWeek,
         avgFertilityScore: avgFertilityScore ? Math.round(avgFertilityScore * 10) / 10 : null,
         topRecommendedCrop,
+        topRecommendedCrops,
         fertilityDistribution: distribution,
       },
     });
