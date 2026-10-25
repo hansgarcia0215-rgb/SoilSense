@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "300"
       - key: ALLOWED_ORIGINS
         value: https://soilsense-liard.vercel.app
       - key: FIREBASE_PROJECT_ID

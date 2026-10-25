@@ -38,6 +38,8 @@ const adminRoutes       = require('./routes/admin.routes');
 const { errorHandler }  = require('./utils/errorHandler');
 
 const app = express();
+app.set('trust proxy', 1);
+
 const isProduction = process.env.NODE_ENV === 'production';
 const serviceUrl = (key, productionUrl, localUrl) => {
   const configuredUrl = process.env[key]?.trim().replace(/\/+$/, '');
@@ -88,7 +90,7 @@ app.use(cors({
 // Prevents abuse and brute-force attacks
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),  // 15 minutes
-  max:      parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),  // Max 100 requests per window
+  max:      parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '300', 10),  // Max 300 requests per client per window
   standardHeaders: true,
   legacyHeaders:   false,
   message: {

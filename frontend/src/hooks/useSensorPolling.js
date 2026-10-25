@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 
-const POLL_INTERVAL_MS = 10000;   // Poll every 10 seconds
+const POLL_INTERVAL_MS = 30000;   // Poll every 30 seconds to limit unnecessary API traffic
 const DEFAULT_DEVICE   = 'SS-ESP32-001';
 
 export default function useSensorPolling(deviceId = DEFAULT_DEVICE, enabled = true) {
