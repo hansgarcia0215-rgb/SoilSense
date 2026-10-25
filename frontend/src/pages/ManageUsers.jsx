@@ -3,7 +3,7 @@
  *
  * Create   — new farmer / extension worker / system administrator accounts
  * Read     — searchable list of all accounts
- * Update   — change role, activate/deactivate
+ * Update   — activate/deactivate accounts
  * Delete   — permanently remove an account
  */
 
@@ -43,7 +43,7 @@ export default function ManageUsers() {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [editing, setEditing]   = useState(null);
-  const [editForm, setEditForm] = useState({ role: '', isActive: true });
+  const [editForm, setEditForm] = useState({ isActive: true });
   const [saving, setSaving]     = useState(false);
 
   // Create
@@ -79,14 +79,16 @@ export default function ManageUsers() {
 
   const openEdit = (user) => {
     setEditing(user);
-    setEditForm({ role: user.role, isActive: user.isActive ?? true });
+    setEditForm({ isActive: user.isActive !== false });
   };
 
   const handleSave = async () => {
     if (!editing) return;
     setSaving(true);
     try {
-      await api.put(`/admin/users/${editing.uid || editing.id}`, editForm);
+      await api.put(`/admin/users/${editing.uid || editing.id}`, {
+        isActive: editForm.isActive,
+      });
       toast.success('User updated!');
       setEditing(null);
       load();
@@ -300,7 +302,7 @@ export default function ManageUsers() {
                     >
                       {user.isActive
                         ? <><UserCheck className="w-3 h-3" /> Active</>
-                        : <><UserX    className="w-3 h-3" /> Inactive</>}
+                        : <><UserX    className="w-3 h-3" /> Deactivated</>}
                     </button>
                   </td>
                   <td className="px-4 py-3">
@@ -353,22 +355,22 @@ export default function ManageUsers() {
               </div>
 
               <div>
-                <label className="input-label">Role</label>
-                <select className="input-field" value={editForm.role}
-                  onChange={e => setEditForm(f => ({...f, role: e.target.value}))}>
-                  {ROLES.map(r => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
+                <label className="input-label" htmlFor="accountStatus">Account status</label>
+                <select
+                  id="accountStatus"
+                  className="input-field"
+                  value={editForm.isActive ? 'active' : 'deactivated'}
+                  onChange={e => setEditForm(f => ({
+                    ...f,
+                    isActive: e.target.value === 'active',
+                  }))}
+                >
+                  <option value="active">Active</option>
+                  <option value="deactivated">Deactivated</option>
                 </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="activeCheck" checked={editForm.isActive}
-                  onChange={e => setEditForm(f => ({...f, isActive: e.target.checked}))}
-                  className="w-4 h-4 rounded text-green-600" />
-                <label htmlFor="activeCheck" className="text-sm font-medium text-gray-700">
-                  Account is active
-                </label>
+                <p className="mt-1 text-xs text-gray-500">
+                  Deactivated accounts cannot access SoilSense.
+                </p>
               </div>
 
               <div className="flex gap-3 pt-2">

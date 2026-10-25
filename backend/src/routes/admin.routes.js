@@ -14,13 +14,12 @@
  *
  *   GET    /api/admin/users           → List all users
  *   POST   /api/admin/users           → Create user (staff or farmer)
- *   PUT    /api/admin/users/:id       → Update user role / active status
+ *   PUT    /api/admin/users/:id       → Activate or deactivate a user account
  *   DELETE /api/admin/users/:id       → Permanently delete user
  */
 
 const express = require('express');
 const { body } = require('express-validator');
-const bcrypt  = require('bcryptjs');
 const router  = express.Router();
 const { admin, db }  = require('../firebase/admin');
 const { authenticate }  = require('../middleware/auth.middleware');
@@ -28,7 +27,6 @@ const { requireRole }   = require('../middleware/role.middleware');
 const { validate }      = require('../middleware/validate.middleware');
 const { createError }   = require('../utils/errorHandler');
 
-const SALT_ROUNDS = 12;
 const MANAGEABLE_ROLES = ['farmer', 'extension_worker', 'admin'];
 const ADMIN_UID = process.env.ADMIN_UID?.trim();
 
@@ -125,7 +123,7 @@ router.get('/users', async (req, res, next) => {
       const role = safe.role === 'researcher' || (ADMIN_UID && safe.uid === ADMIN_UID)
         ? 'admin'
         : safe.role;
-      return { id: d.id, ...safe, role };
+      return { id: d.id, ...safe, role, isActive: safe.isActive !== false };
     });
     data.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
     res.json({ success: true, data });
@@ -145,6 +143,7 @@ router.post('/users',
   ],
   validate,
   async (req, res, next) => {
+    let firebaseUser;
     try {
       const { displayName, email, password, role, barangay, municipality } = req.body;
       const normalizedEmail = email.trim().toLowerCase();
@@ -157,14 +156,17 @@ router.post('/users',
           'This email address is already registered.'));
       }
 
-      const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-      const userRef = db.collection('users').doc();
-
-      const newUser = {
-        uid: userRef.id,
+      firebaseUser = await admin.auth().createUser({
         displayName: displayName.trim(),
         email: normalizedEmail,
-        passwordHash,
+        password,
+        disabled: false,
+      });
+
+      const newUser = {
+        uid: firebaseUser.uid,
+        displayName: displayName.trim(),
+        email: normalizedEmail,
         role,
         barangay: barangay || '',
         municipality: municipality || 'Roxas',
@@ -175,29 +177,37 @@ router.post('/users',
         updatedAt: new Date(),
       };
 
+      const userRef = db.collection('users').doc(firebaseUser.uid);
       await userRef.set(newUser);
-      const { passwordHash: _ph, ...safe } = newUser;
-      res.status(201).json({ success: true, data: safe });
-    } catch (err) { next(err); }
+      res.status(201).json({ success: true, data: newUser });
+    } catch (err) {
+      if (firebaseUser) {
+        try {
+          await admin.auth().deleteUser(firebaseUser.uid);
+        } catch (cleanupError) {
+          console.error('[Admin] Could not remove Firebase user after profile creation failed:', cleanupError.message);
+        }
+      }
+      if (err.code === 'auth/email-already-exists') {
+        return next(createError(409, 'EMAIL_EXISTS',
+          'This email address is already registered.'));
+      }
+      next(err);
+    }
   });
 
 router.put('/users/:id',
   [
-    body('role').optional().isIn(MANAGEABLE_ROLES).withMessage('Invalid role.'),
     body('isActive').optional().isBoolean().withMessage('isActive must be a boolean.'),
-    body('barangay').optional().trim(),
-    body('municipality').optional().trim(),
   ],
   validate,
   async (req, res, next) => {
     try {
-      // Only allow updating role / status / location — never passwordHash here
-      const { role, isActive, barangay, municipality } = req.body;
-      const update = { updatedAt: new Date() };
-      if (role      !== undefined) update.role      = role;
-      if (isActive  !== undefined) update.isActive  = isActive;
-      if (barangay  !== undefined) update.barangay  = barangay;
-      if (municipality !== undefined) update.municipality = municipality;
+      const fields = Object.keys(req.body);
+      if (fields.length !== 1 || fields[0] !== 'isActive') {
+        return next(createError(400, 'INVALID_USER_UPDATE',
+          'Only account status can be changed here.'));
+      }
 
       const docRef = db.collection('users').doc(req.params.id);
       const doc    = await docRef.get();
@@ -205,15 +215,23 @@ router.put('/users/:id',
         return next(createError(404, 'USER_NOT_FOUND', 'User not found.'));
       }
 
-      // Guard: never deactivate or demote yourself
+      const isActive = req.body.isActive === true || req.body.isActive === 'true';
+
+      // Guard: never deactivate yourself
       if (doc.data().uid === req.user.uid || req.params.id === req.user.uid) {
-        if (isActive === false || (role !== undefined && role !== 'admin')) {
+        if (!isActive) {
           return next(createError(400, 'SELF_MODIFICATION',
-            'You cannot change your own role or deactivate your own account.'));
+            'You cannot deactivate your own account.'));
         }
       }
 
-      await docRef.update(update);
+      await docRef.update({ isActive, updatedAt: new Date() });
+      const uid = doc.data().uid || req.params.id;
+      try {
+        await admin.auth().updateUser(uid, { disabled: !isActive });
+      } catch (err) {
+        if (err.code !== 'auth/user-not-found') throw err;
+      }
       res.json({ success: true });
     } catch (err) { next(err); }
   });
@@ -229,13 +247,12 @@ router.delete('/users/:id', async (req, res, next) => {
       return next(createError(400, 'SELF_DELETION',
         'You cannot delete your own account.'));
     }
-    if (doc.data().isDemoAccount && doc.data().uid) {
-      try {
-        await admin.auth().deleteUser(doc.data().uid);
-      } catch (err) {
-        if (err.code !== 'auth/user-not-found') {
-          return next(err);
-        }
+    const uid = doc.data().uid || req.params.id;
+    try {
+      await admin.auth().deleteUser(uid);
+    } catch (err) {
+      if (err.code !== 'auth/user-not-found') {
+        return next(err);
       }
     }
 

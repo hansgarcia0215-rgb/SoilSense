@@ -113,9 +113,12 @@ node seed.js
 The seed script adds sample soil, crop, and recommendation data, but does not
 create login accounts. Users sign in through Firebase Authentication. Public
 registration creates farmer accounts; assign staff roles from the admin user
-management page. To clean up accounts seeded by an older version, sign in as
-the configured admin, open **Manage Users**, and delete the seeded demo entries;
-their Firebase Authentication accounts are removed when present.
+management page. **Manage Users** can create Firebase-backed accounts, activate
+or deactivate accounts, and permanently delete accounts. Deactivated accounts
+are blocked from API access and Firebase sign-in. To clean up accounts seeded
+by an older version, sign in as the configured admin, open **Manage Users**,
+and delete the seeded demo entries; their Firebase Authentication accounts
+are removed when present.
 
 ### 7. ESP32 Firmware (Optional)
 

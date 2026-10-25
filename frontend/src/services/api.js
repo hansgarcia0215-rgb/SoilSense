@@ -6,6 +6,7 @@
  */
 
 import axios from 'axios';
+import { signOut } from 'firebase/auth';
 import { auth } from './firebase';
 
 const api = axios.create({
@@ -47,6 +48,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('soilsense_token');
       localStorage.removeItem('soilsense_user');
+      window.location.href = '/login';
+    } else if (error.response?.data?.error === 'ACCOUNT_DEACTIVATED') {
+      localStorage.removeItem('soilsense_token');
+      localStorage.removeItem('soilsense_user');
+      signOut(auth).catch(signOutError => {
+        console.error('[Auth] Could not sign out deactivated account:', signOutError);
+      });
       window.location.href = '/login';
     }
     return Promise.reject(error);
