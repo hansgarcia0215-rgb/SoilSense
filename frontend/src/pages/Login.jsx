@@ -184,20 +184,6 @@ export default function Login() {
             </div>
           )}
 
-          {resetSent && (
-            <div role="status" className="mb-5 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              If an account exists for this email, Firebase has sent a password reset link. Check your inbox and spam folder.
-            </div>
-          )}
-
-          {resetError && (
-            <div role="alert" className="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              {resetError}
-            </div>
-          )}
-
           {/* ── Google sign-in ─────────────────────────────── */}
           <button
             type="button"
@@ -239,17 +225,7 @@ export default function Login() {
                 value={form.email} onChange={handleChange} disabled={loading} />
             </div>
             <div>
-              <div className="mb-1 flex items-center justify-between">
-                <label className="input-label mb-0">Password</label>
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={resetLoading || loading || googleLoading}
-                  className="text-xs font-bold text-green-700 hover:text-green-800 disabled:opacity-50"
-                >
-                  {resetLoading ? 'Sending link...' : 'Forgot password?'}
-                </button>
-              </div>
+              <label className="input-label">Password</label>
               <div className="relative">
                 <input name="password" type={showPw ? 'text' : 'password'}
                   autoComplete="current-password"
@@ -261,6 +237,28 @@ export default function Login() {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={resetLoading || loading || googleLoading}
+                  className="text-xs font-bold text-green-700 hover:text-green-800 disabled:opacity-50"
+                >
+                  {resetLoading ? 'Sending link...' : 'Forgot password?'}
+                </button>
+              </div>
+              {resetSent && (
+                <div role="status" className="mt-2 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  If an account exists for this email, Firebase has sent a password reset link. Check your inbox and spam folder.
+                </div>
+              )}
+              {resetError && (
+                <div role="alert" className="mt-2 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {resetError}
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={loading || success}
