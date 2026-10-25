@@ -3,7 +3,7 @@
  *
  * What it does:
  *   Coordinates the complete assessment workflow:
- *   1. Upload image to Firebase Storage
+ *   1. Compress image for Firestore
  *   2. Call image-processing microservice (Python/Flask on port 5001)
  *   3. Fetch crops + fuzzy rules from Firestore
  *   4. Call fuzzy logic microservice (Python/Flask on port 5002)
@@ -22,9 +22,13 @@
 
 const axios  = require('axios');
 const { v4: uuidv4 } = require('uuid');
-const { db, storage } = require('../firebase/admin');
+const { db } = require('../firebase/admin');
 const { generateAssessmentId } = require('../utils/assessmentId');
 const { createError } = require('../utils/errorHandler');
+const {
+  compressAssessmentImage,
+  MAX_ASSESSMENT_DOCUMENT_BYTES,
+} = require('../utils/assessmentImage');
 const { MUNICIPALITY, PROVINCE, REGION, isWithinRoxas } = require('../utils/roxasConfig');
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -73,26 +77,17 @@ async function runAssessment(params) {
     deviceId, barangay, notes,
   } = params;
 
-  // ── Step 1: Upload image to Firebase Storage ──────────────────────────────
-  const imageId   = uuidv4();
-  const imagePath = `soil-images/${userId}/${imageId}.${mimetype.split('/')[1] || 'jpg'}`;
-  let   imageUploaded = false;
-
+  // ── Step 1: Compress photo for Firestore ──────────────────────────────────
+  const imageId = uuidv4();
+  let compressedImage;
   try {
-    const bucket = storage.bucket();
-    const file   = bucket.file(imagePath);
-    await file.save(imageBuffer, {
-      metadata: { contentType: mimetype },
-      resumable: false,
-    });
-    const [metadata] = await file.getMetadata();
-    if (!metadata.contentType?.startsWith('image/') || Number(metadata.size) <= 0) {
-      throw new Error('Uploaded file is missing or is not an image.');
-    }
-    imageUploaded = true;
+    compressedImage = await compressAssessmentImage(imageBuffer);
   } catch (err) {
-    console.error('[Orchestrator] Storage upload failed:', err.message);
-    throw createError(503, 'IMAGE_STORAGE_FAILED', 'The soil photo could not be saved. Please try again later.');
+    console.error('[Orchestrator] Photo compression failed:', err.message);
+    if (err.code === 'IMAGE_TOO_LARGE') {
+      throw createError(422, 'IMAGE_TOO_LARGE', 'The soil photo could not be compressed enough to store in Firestore. Please upload a smaller image.');
+    }
+    throw createError(422, 'INVALID_IMAGE', 'The soil photo could not be processed. Please upload a valid JPEG or PNG image.');
   }
 
   // ── Step 2: Call image processing service ─────────────────────────────────
@@ -274,8 +269,9 @@ async function runAssessment(params) {
 
     imageData: {
       imageId,
-      imagePath: imageUploaded ? imagePath : null,
+      ...compressedImage,
     },
+    hasImage: true,
 
     imageFeatures,
     serviceStatus,
@@ -308,6 +304,11 @@ async function runAssessment(params) {
     processingTimeMs,
     labValidation: null,
   };
+
+  const estimatedDocumentSize = Buffer.byteLength(JSON.stringify(assessmentDoc), 'utf8');
+  if (estimatedDocumentSize > MAX_ASSESSMENT_DOCUMENT_BYTES) {
+    throw createError(422, 'ASSESSMENT_TOO_LARGE', 'This assessment is too large to fit safely in Firestore. Please try a smaller soil photo.');
+  }
 
   await db.collection('soil_assessments').doc(assessmentId).set(assessmentDoc);
 

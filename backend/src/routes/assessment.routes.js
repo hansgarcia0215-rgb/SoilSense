@@ -10,7 +10,7 @@ const { authenticate }          = require('../middleware/auth.middleware');
 const { requireRole }           = require('../middleware/role.middleware');
 const { handleSoilImageUpload } = require('../middleware/upload.middleware');
 const { validate }              = require('../middleware/validate.middleware');
-const { findAssessmentImage }   = require('../utils/assessmentStorage');
+const { getAssessmentImageMetadata } = require('../utils/assessmentImage');
 const { createError }           = require('../utils/errorHandler');
 
 // All assessment routes require authentication
@@ -55,7 +55,11 @@ router.post('/analyze',
         latitude, longitude, soilPH, soilMoisture, soilTemperature, deviceId, barangay, notes,
       });
 
-      res.status(201).json({ success: true, ...result });
+      res.status(201).json({
+        success: true,
+        ...result,
+        imageData: getAssessmentImageMetadata(result.imageData),
+      });
     } catch (err) {
       next(err);
     }
@@ -69,17 +73,29 @@ router.get('/', async (req, res, next) => {
     const { uid, role } = req.user;
     const limit = Math.min(parseInt(req.query.limit || '20', 10), 100);
 
-    let snapshot;
+    const assessmentFields = [
+      'assessmentId',
+      'userId',
+      'farmerName',
+      'createdAt',
+      'status',
+      'location',
+      'fuzzyResult.fertilityClass',
+      'fuzzyResult.fertilityScore',
+      'rootcropResults',
+      'imageData.imagePath',
+      'imageData.imageUrl',
+      'imageData.imageSizeBytes',
+      'hasImage',
+      'labValidation.isValidated',
+    ];
+    let query = db.collection('soil_assessments');
 
     if (role === 'farmer') {
       // Fetch by userId only — no orderBy avoids needing a composite index
-      snapshot = await db.collection('soil_assessments')
-        .where('userId', '==', uid)
-        .get();
-    } else {
-      // Admins and extension workers see all
-      snapshot = await db.collection('soil_assessments').get();
+      query = query.where('userId', '==', uid);
     }
+    const snapshot = await query.select(...assessmentFields).get();
 
     // Map to summary objects
     let data = snapshot.docs.map(doc => {
@@ -94,7 +110,7 @@ router.get('/', async (req, res, next) => {
         fertilityClass:   d.fuzzyResult?.fertilityClass || null,
         fertilityScore:   d.fuzzyResult?.fertilityScore || null,
         bestRootcrop:     d.rootcropResults?.find(r => r.rank === 1)?.cropName || null,
-        hasImage:         !!(d.imageData?.imagePath || d.imageData?.imageUrl),
+        hasImage:         Boolean(d.hasImage || getAssessmentImageMetadata(d.imageData).hasImage),
         hasLabValidation: !!d.labValidation?.isValidated,
       };
     });
@@ -133,7 +149,13 @@ router.get('/:id', async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
     }
 
-    res.json({ success: true, data });
+    res.json({
+      success: true,
+      data: {
+        ...data,
+        imageData: getAssessmentImageMetadata(data.imageData),
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -142,7 +164,7 @@ router.get('/:id', async (req, res, next) => {
 // ─── Stream Assessment Image ───────────────────────────────────
 router.get('/:id/image', async (req, res, next) => {
   try {
-    const { db, storage } = require('../firebase/admin');
+    const { db } = require('../firebase/admin');
     const { uid, role } = req.user;
     const doc = await db.collection('soil_assessments').doc(req.params.id).get();
 
@@ -155,36 +177,19 @@ router.get('/:id/image', async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
     }
 
-    const imagePath = assessment.imageData?.imagePath;
-    if (typeof imagePath !== 'string' || !imagePath.startsWith('soil-images/')) {
-      return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'No stored image is available for this assessment.' });
+    const imageData = assessment.imageData || {};
+    if (typeof imageData.imageBase64 === 'string' && imageData.imageBase64.length > 0) {
+      const imageBuffer = Buffer.from(imageData.imageBase64, 'base64');
+      res.set({
+        'Content-Type': imageData.imageMimeType || 'image/jpeg',
+        'Content-Length': imageBuffer.length,
+        'Cache-Control': 'private, max-age=300',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      return res.end(imageBuffer);
     }
 
-    const storedImage = await findAssessmentImage(storage, imagePath);
-    if (!storedImage) {
-      return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'The stored assessment image was not found in the configured Firebase Storage buckets.' });
-    }
-    const { file, metadata } = storedImage;
-
-    if (!metadata.contentType?.startsWith('image/')) {
-      return res.status(415).json({ success: false, error: 'INVALID_IMAGE', message: 'The stored assessment file is not an image.' });
-    }
-
-    res.set({
-      'Content-Type': metadata.contentType,
-      'Cache-Control': 'private, max-age=300',
-      'X-Content-Type-Options': 'nosniff',
-    });
-
-    const imageStream = file.createReadStream();
-    imageStream.on('error', err => {
-      if (res.headersSent) {
-        res.destroy(err);
-      } else {
-        next(err);
-      }
-    });
-    imageStream.pipe(res);
+    return res.status(404).json({ success: false, error: 'IMAGE_NOT_FOUND', message: 'No Firestore photo is stored for this assessment.' });
   } catch (err) {
     next(err);
   }

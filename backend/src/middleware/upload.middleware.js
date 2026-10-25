@@ -5,11 +5,10 @@
  *   Configures Multer to:
  *   - Accept only JPEG and PNG image files
  *   - Reject files over MAX_IMAGE_SIZE_MB
- *   - Store files in memory (as Buffer) for Firebase Storage upload
+ *   - Store files in memory (as Buffer) for compression and analysis
  *
  * Why memory storage (not disk)?
- *   We immediately upload the buffer to Firebase Storage,
- *   so we don't need to create a temporary file on the server disk.
+ *   The buffer is compressed and saved in Firestore without a temporary file.
  */
 
 const multer = require('multer');
@@ -22,7 +21,7 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 // Allowed MIME types
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
 
-// Store files in memory as Buffer objects (not written to disk)
+// Store files in memory as Buffer objects for image compression.
 const storage = multer.memoryStorage();
 
 /**

@@ -30,16 +30,6 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
-          // Firebase Storage images — cache first
-          {
-            urlPattern: /^https:\/\/storage\.googleapis\.com\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'soil-images-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
           // Google Fonts
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,

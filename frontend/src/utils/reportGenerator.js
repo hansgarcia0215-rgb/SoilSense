@@ -94,10 +94,10 @@ export async function generatePDFReport(data) {
       : data.cropRecommendations || [];
     let uploadedImage = null;
 
-    if (data.imageData?.imagePath || imageUrl) {
+    if (data.imageData?.hasImage || data.imageData?.imagePath || imageUrl) {
       try {
         uploadedImage = await loadReportImage(
-          data.imageData?.imagePath ? data.assessmentId : null,
+          data.imageData?.hasImage || data.imageData?.imagePath ? data.assessmentId : null,
           imageUrl
         );
       } catch (err) {

@@ -15,7 +15,7 @@ Smartphone (React Web App)
     ↓
 Node.js + Express Backend (port 3001)
     ↓
-Firebase Firestore + Cloud Storage
+Firebase Firestore (assessment data + compressed soil photos)
     ↓
 Python Image Processing Service (port 5001)  ←→  Python Fuzzy Logic Engine (port 5002)
     ↓
@@ -31,7 +31,7 @@ Soil Fertility Classification + Rootcrop Recommendations
 | Frontend           | React, Vite, Tailwind CSS           |
 | Backend API        | Node.js, Express                    |
 | Database           | Firebase Firestore                  |
-| Image Storage      | Firebase Cloud Storage              |
+| Image Storage      | Compressed JPEG stored in Firestore |
 | Authentication     | JWT (custom) + Firebase Admin SDK   |
 | Image Processing   | Python, OpenCV, Flask (port 5001)   |
 | Fuzzy Logic Engine | Python, NumPy, Flask (port 5002)    |
@@ -44,9 +44,9 @@ Soil Fertility Classification + Rootcrop Recommendations
 
 ## Prerequisites
 
-- **Node.js** v18+
+- **Node.js** v18.17+
 - **Python** 3.10+
-- **Firebase project** with Firestore, Storage, and Auth enabled
+- **Firebase project** with Firestore and Authentication enabled
 - (Optional) **ESP32 development board** with soil sensors
 
 ---
@@ -56,10 +56,13 @@ Soil Fertility Classification + Rootcrop Recommendations
 ### 1. Firebase Configuration
 
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-2. Enable **Firestore**, **Storage**, and **Authentication** (Email/Password)
+2. Enable **Firestore** and **Authentication** (Email/Password)
 3. Generate a **Service Account Key**: Project Settings → Service Accounts → Generate new private key
 4. Copy key values into `backend/.env`
 5. Copy web app config into `frontend/.env`
+
+Soil photos are resized and compressed to at most 450 KiB before being saved
+inside the Firestore assessment document. Cloud Storage is not required.
 
 ### 2. Backend Setup
 

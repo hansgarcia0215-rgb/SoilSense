@@ -4,11 +4,11 @@
  * What it does:
  *   Initializes the Firebase Admin SDK using service account credentials
  *   from environment variables. Exports the admin instance, Firestore,
- *   and Storage for use throughout the backend.
+ *   and Authentication for use throughout the backend.
  *
  * Why it exists:
  *   The Admin SDK allows the backend to securely read/write Firestore,
- *   verify Firebase Auth tokens, and manage Storage — all server-side.
+ *   verify Firebase Auth tokens and access Firestore — all server-side.
  *
  * How to configure:
  *   Set FIREBASE_* environment variables in .env
@@ -55,12 +55,10 @@ if (!admin.apps.length) {
       clientEmail:  process.env.FIREBASE_CLIENT_EMAIL,
       privateKey,
     }),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }
 
 const db      = admin.firestore();   // Firestore database instance
-const storage = admin.storage();     // Cloud Storage instance
 const auth    = admin.auth();        // Firebase Auth admin instance
 
-module.exports = { admin, db, storage, auth };
+module.exports = { admin, db, auth };
