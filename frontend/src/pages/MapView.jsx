@@ -11,7 +11,8 @@ import {
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import assessmentService from '../services/assessmentService';
 import {
-  DEFAULT_ZOOM, MUNICIPALITY, PROVINCE, ROXAS_BOUNDS, ROXAS_CENTER, ROXAS_LEAFLET_BOUNDS,
+  DEFAULT_ZOOM, MUNICIPALITY, PROVINCE, ROXAS_BOUNDS, ROXAS_BOUNDARY, ROXAS_CENTER,
+  ROXAS_LEAFLET_BOUNDS,
 } from '../utils/roxasConfig';
 
 const FERTILITY = {
@@ -244,13 +245,13 @@ export default function MapView() {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 19,
       }).addTo(map);
-      leaflet.rectangle(ROXAS_LEAFLET_BOUNDS, {
-        color: '#16a34a',
+      leaflet.polygon(ROXAS_BOUNDARY, {
+        color: '#ef4444',
         weight: 2,
-        fillColor: '#22c55e',
+        fillColor: '#ef4444',
         fillOpacity: 0.04,
-        dashArray: '6 6',
-      }).addTo(map).bindTooltip(`${MUNICIPALITY}, ${PROVINCE} service area`);
+        dashArray: '2 5',
+      }).addTo(map).bindTooltip(`${MUNICIPALITY}, ${PROVINCE} municipal boundary`);
       markerLayerRef.current = leaflet.layerGroup().addTo(map);
       mapRef.current = map;
       setMapEpoch(epoch => epoch + 1);
@@ -309,7 +310,7 @@ export default function MapView() {
       } else if (bounds.length === 1) {
         map.setView(bounds[0], 14);
       } else {
-        map.setView(ROXAS_CENTER, DEFAULT_ZOOM);
+        map.fitBounds(ROXAS_LEAFLET_BOUNDS, { padding: [48, 48], maxZoom: DEFAULT_ZOOM });
       }
     }).catch(() => {
       if (!cancelled) setError('Assessment markers could not be displayed.');
@@ -472,7 +473,10 @@ export default function MapView() {
                 {value.label} ({stats.classCounts[key]})
               </span>
             ))}
-            <span className="ml-auto text-gray-400">Boundary is approximate · OpenStreetMap</span>
+            <span className="ml-auto text-gray-400">
+              Boundary: <a href="https://www.geoboundaries.org/" target="_blank" rel="noreferrer" className="underline">geoBoundaries · NAMRIA / PSA / OCHA (CC BY 3.0 IGO)</a>
+              {' '}· Map data: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a>
+            </span>
           </div>
         </div>
 
