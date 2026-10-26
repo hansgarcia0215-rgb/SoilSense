@@ -55,6 +55,7 @@ async function authenticate(req, res, next) {
     email:       decoded.email,
     displayName: decoded.name || decoded.display_name || '',
     role,
+    barangay:    userDoc.exists ? userDoc.data().barangay || '' : '',
   };
 
   next();

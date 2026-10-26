@@ -27,6 +27,11 @@ router.post('/analyze',
 
       const { runAssessment } = require('../services/assessmentOrchestrator');
       const { latitude, longitude, soilPH, soilMoisture, soilTemperature, deviceId, barangay, notes } = req.body;
+      const assessmentBarangay = typeof barangay === 'string' && barangay.trim()
+        ? barangay.trim()
+        : typeof req.user.barangay === 'string' && req.user.barangay.trim()
+          ? req.user.barangay.trim()
+          : null;
 
       if (soilPH != null) {
         const ph = parseFloat(soilPH);
@@ -52,7 +57,9 @@ router.post('/analyze',
         mimetype:        req.file.mimetype,
         userId:          req.user.uid,
         farmerName:      req.user.displayName,
-        latitude, longitude, soilPH, soilMoisture, soilTemperature, deviceId, barangay, notes,
+        latitude, longitude, soilPH, soilMoisture, soilTemperature, deviceId,
+        barangay: assessmentBarangay,
+        notes,
       });
 
       res.status(201).json({
@@ -124,6 +131,30 @@ router.get('/', async (req, res, next) => {
 
     // Apply limit after sorting
     data = data.slice(0, limit);
+
+    // Use current profile barangays for older assessments that have no saved label.
+    const missingBarangayUserIds = [...new Set(
+      data.filter(item => !item.location?.barangay && item.userId).map(item => item.userId)
+    )];
+    const profileBarangays = new Map();
+    await Promise.all(missingBarangayUserIds.map(async userId => {
+      if (userId === uid && req.user.barangay) {
+        profileBarangays.set(userId, req.user.barangay);
+        return;
+      }
+      const userDoc = await db.collection('users').doc(userId).get();
+      const profileBarangay = userDoc.exists ? userDoc.data().barangay : null;
+      if (typeof profileBarangay === 'string' && profileBarangay.trim()) {
+        profileBarangays.set(userId, profileBarangay.trim());
+      }
+    }));
+
+    data = data.map(item => {
+      const barangay = profileBarangays.get(item.userId);
+      return barangay
+        ? { ...item, location: { ...item.location, barangay } }
+        : item;
+    });
 
     res.json({ success: true, total: data.length, data });
   } catch (err) {
