@@ -64,12 +64,27 @@ Soil Fertility Classification + Rootcrop Recommendations
 Soil photos are resized and compressed to at most 450 KiB before being saved
 inside the Firestore assessment document. Cloud Storage is not required.
 
+For assessment-specific fertilizer guidance, create a Gemini API key in
+[Google AI Studio](https://aistudio.google.com/apikey) and set `GEMINI_API_KEY`
+in `backend/.env` for local development or in the **SoilSense API** Render
+service environment. The API calls Gemini after the fuzzy assessment and saves
+the response with the assessment in Firestore. Keep this key server-side; never
+add it to `frontend/.env`, Vercel variables, or ESP32 firmware. `GEMINI_MODEL`
+defaults to `gemini-3.8-flash` and can be changed if needed.
+Restrict the key to the Gemini API in Google AI Studio/Cloud Console and check
+that the project has the required API access and quota.
+
+Gemini provides cautious decision-support guidance from the assessment; it
+cannot determine soil N-P-K or prescribe validated application rates without
+laboratory results. Verify fertilizer and lime decisions with a soil test and
+local agricultural extension guidance.
+
 ### 2. Backend Setup
 
 Open a PowerShell terminal and run each line separately:
 ```powershell
 cd C:\Users\Ryan\Desktop\SOILSENSE\backend
-# Edit .env — fill in FIREBASE_* and JWT_SECRET
+# Edit .env — fill in FIREBASE_*, JWT_SECRET, and GEMINI_API_KEY
 npm install
 npm run dev               # Starts on http://localhost:3001
 ```
@@ -167,7 +182,8 @@ backend or its Firebase Admin credentials.
 2. Enter the requested environment values in Render. For the Node API, use the
    Firebase Admin service-account `project_id`, `client_email`, and
    `private_key`, plus a strong random `JWT_SECRET`, an `ESP32_DEVICE_API_KEY`,
-   and `ADMIN_UID`.
+   `GEMINI_API_KEY`, and `ADMIN_UID`. Set the Gemini key only on the SoilSense
+   API service; it is not needed by the image-processing or fuzzy-engine services.
    Find the admin account's **User UID** in Firebase Console → Authentication →
    Users and assign that exact value to `ADMIN_UID`. Keep secrets in Render
    only; never commit them or paste them into chat. If the service account key

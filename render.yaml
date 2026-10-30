@@ -32,6 +32,10 @@ services:
         value: https://soilsense-fuzzy-engine.onrender.com
       - key: SERVICE_API_KEY
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
 
   - type: web
     name: soilsense-image-processing

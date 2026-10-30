@@ -25,6 +25,7 @@ const { v4: uuidv4 } = require('uuid');
 const { db } = require('../firebase/admin');
 const { generateAssessmentId } = require('../utils/assessmentId');
 const { createError } = require('../utils/errorHandler');
+const { generateFertilizerRecommendation } = require('./geminiFertilizer');
 const {
   compressAssessmentImage,
   MAX_ASSESSMENT_DOCUMENT_BYTES,
@@ -97,6 +98,7 @@ async function runAssessment(params) {
   const serviceStatus = {
     imageProcessing: { status: 'offline', message: null },
     fuzzyEngine: { status: 'offline', message: null },
+    fertilizerRecommendation: { status: 'not_configured', message: null },
   };
 
   try {
@@ -162,7 +164,6 @@ async function runAssessment(params) {
   let fuzzyResult    = {};
   let rootcropResults = [];
   let allCropsRanked = [];
-  let fertRecommKey  = null;
   let fertRecommCropId = null;
   let confidenceData = {};
 
@@ -206,7 +207,6 @@ async function runAssessment(params) {
       ? fd.cropRecommendations
       : fd.rootcrops || [];
     allCropsRanked  = fd.allCropsRanked || [];
-    fertRecommKey   = fd.fertilizerRecommendationKey || null;
     fertRecommCropId = rootcropResults.find(c => c.cropId)?.cropId || null;
     confidenceData  = fd.confidence;
     serviceStatus.fuzzyEngine = { status: 'online', message: null };
@@ -228,54 +228,65 @@ async function runAssessment(params) {
     };
   }
 
-  // ── Step 5: Fetch fertilizer recommendation from Firestore ────────────────
-  let fertRecommendationData = null;
+  // ── Step 5: Generate assessment-based fertilizer guidance with Gemini ─────
+  let aiFertilizerRecommendation = null;
   if (serviceStatus.fuzzyEngine.status === 'online') {
     try {
-      const fertilityClass = fuzzyResult.fertilityClass;
-      const fallbackKey = `fert-${fertilityClass}-general`;
-      const recommendationKeys = [...new Set([
-        fertRecommKey,
-        fertRecommCropId ? `fert-${fertilityClass}-${fertRecommCropId}` : null,
-        fallbackKey,
-      ].filter(Boolean))];
-
-      for (const key of recommendationKeys) {
-        const doc = await db.collection('fertilizer_recommendations').doc(key).get();
-        if (doc.exists) {
-          const recommendation = doc.data();
-          const matchesFertility = recommendation.fertilityClass === fertilityClass;
-          const matchesCrop = recommendation.cropId === fertRecommCropId ||
-            recommendation.cropId === 'general';
-          if (matchesFertility && matchesCrop) {
-            fertRecommendationData = { ...recommendation, recId: doc.id };
-            break;
-          }
-        }
-      }
-
-      // Older Firestore records may use generated document IDs rather than
-      // the deterministic fertilizer key, so match their stored fields too.
-      if (!fertRecommendationData) {
-        const snapshot = await db.collection('fertilizer_recommendations')
-          .where('fertilityClass', '==', fertilityClass)
-          .get();
-        const recommendations = snapshot.docs.map(doc => ({
-          ...doc.data(),
-          recId: doc.id,
-        }));
-        fertRecommendationData =
-          recommendations.find(item => item.cropId === fertRecommCropId) ||
-          recommendations.find(item => item.cropId === 'general') ||
-          null;
-      }
-
-      if (fertRecommendationData) {
-        fertRecommKey = fertRecommendationData.recId;
-      }
+      const topCrop = rootcropResults.find(crop => crop.cropId === fertRecommCropId);
+      const cropRecord = crops.find(crop => crop.cropId === fertRecommCropId);
+      const cropRequirements = cropRecord?.requirements;
+      aiFertilizerRecommendation = await generateFertilizerRecommendation({
+        location: {
+          municipality: MUNICIPALITY,
+          province: PROVINCE,
+          region: REGION,
+        },
+        assessment: {
+          fertilityClass: fuzzyResult.fertilityClass,
+          fertilityScore: fuzzyResult.fertilityScore,
+          confidence: fuzzyResult.confidence,
+          confidenceLevel: fuzzyResult.confidenceLevel,
+        },
+        measurements: {
+          soilPH: soilPH != null ? parseFloat(soilPH) : null,
+          soilMoisture: soilMoisture != null ? parseFloat(soilMoisture) : null,
+          soilTemperature: soilTemperature != null ? parseFloat(soilTemperature) : null,
+        },
+        imageAssessment: {
+          visualCondition: derivedInputs.visual_condition || null,
+          imageQuality: derivedInputs.image_quality || null,
+        },
+        topRankedCrop: topCrop ? {
+          cropId: topCrop.cropId,
+          cropName: topCrop.cropName,
+          suitabilityScore: topCrop.suitabilityScore,
+          requirements: cropRequirements ? {
+            phMin: cropRequirements.phMin,
+            phMax: cropRequirements.phMax,
+            phOptimal: cropRequirements.phOptimal,
+            moistureMin: cropRequirements.moistureMin,
+            moistureMax: cropRequirements.moistureMax,
+            moistureOptimal: cropRequirements.moistureOptimal,
+            fertilityMin: cropRequirements.fertilityMin,
+            drainagePreference: cropRequirements.drainagePreference,
+            soilTexturePreference: cropRequirements.soilTexturePreference,
+          } : null,
+        } : null,
+        laboratoryNpkResults: null,
+      });
+      serviceStatus.fertilizerRecommendation = { status: 'online', message: null };
     } catch (err) {
-      console.error('[Orchestrator] Fertilizer recommendation lookup failed:', err.message);
+      console.error('[Orchestrator] Gemini fertilizer recommendation failed:', err.message);
+      serviceStatus.fertilizerRecommendation = {
+        status: err.code === 'GEMINI_NOT_CONFIGURED' ? 'not_configured' : 'offline',
+        message: err.message,
+      };
     }
+  } else {
+    serviceStatus.fertilizerRecommendation = {
+      status: 'unavailable',
+      message: 'Gemini recommendations require a completed fuzzy assessment.',
+    };
   }
 
   // ── Step 6: Generate assessment ID and save to Firestore ──────────────────
@@ -333,9 +344,8 @@ async function runAssessment(params) {
     rootcropResults,
     cropRecommendations: rootcropResults,
     allCropsRanked,
-    fertilizerRecommendationKey:  fertRecommKey,
     fertilizerRecommendationCropId: fertRecommCropId,
-    fertilizerRecommendationData: fertRecommendationData,
+    aiFertilizerRecommendation,
     confidenceData,
 
     processingTimeMs,
