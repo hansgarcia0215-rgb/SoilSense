@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Download, PlusCircle, Share2, FlaskConical,
-  ChevronDown, ChevronUp, AlertTriangle, MapPin, Calendar, Info, Leaf
+  ChevronDown, AlertTriangle, MapPin, Calendar, Info, Leaf
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -36,7 +36,6 @@ export default function AssessmentResult() {
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState('');
 
-  const [showFertilizer,  setShowFertilizer]  = useState(false);
   const [showComparison,  setShowComparison]  = useState(false);
   const [showTechnical,   setShowTechnical]   = useState(false);
   const [showAllCrops,    setShowAllCrops]    = useState(false);
@@ -112,6 +111,7 @@ export default function AssessmentResult() {
     fClass === 'moderate' ? 'border-amber-200' : 'border-red-200';
 
   const bestCrop = crops.find(c => c.status === 'BEST' || c.status === 'CLOSEST');
+  const fertilizerCrop = crops.find(c => c.cropId === data.fertilizerRecommendationCropId) || bestCrop;
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 pb-8">
@@ -404,43 +404,86 @@ export default function AssessmentResult() {
       )}
 
       {/* ── Fertilizer (accordion) ──────────────────────────── */}
-      {fert && (
-        <div className="card p-0 overflow-hidden animate-fade-in-up"
-             style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
-          <button
-            onClick={() => setShowFertilizer(!showFertilizer)}
-            className="w-full flex items-center justify-between px-5 py-4
-                       hover:bg-gray-50 transition-colors text-left"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-base">🌿</span>
-              </div>
-              <span className="font-bold text-gray-800 text-sm">Fertilizer Recommendation</span>
+      <div className="card p-0 overflow-hidden animate-fade-in-up"
+           style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
+        <div className="px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+              <span className="text-base">🌿</span>
             </div>
-            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300
-                                     ${showFertilizer ? 'rotate-180' : ''}`} />
-          </button>
-          {showFertilizer && (
-            <div className="px-5 pb-5 border-t border-gray-100 pt-4 space-y-2.5 animate-slide-down">
-              <p className="text-sm text-gray-700 leading-relaxed">{fert.generalRecommendation}</p>
-              {fert.actions?.map((a, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center
-                                   flex-shrink-0 mt-0.5 text-green-600 text-xs font-bold">✓</span>
-                  {a}
-                </div>
-              ))}
-              {fert.retestRecommendation && (
-                <p className="text-xs text-gray-500 italic pt-1">{fert.retestRecommendation}</p>
-              )}
-              <p className="text-[11px] text-gray-500 pt-1">
-                Source: {fert.dataSource || 'REFERENCE — verify with qualified agricultural personnel'}
-              </p>
-            </div>
-          )}
+            <span className="font-bold text-gray-800 text-sm">Fertilizer Recommendation</span>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Based on {fClass} soil fertility
+            {fertilizerCrop?.cropName ? ` and the top-ranked crop, ${fertilizerCrop.cropName}` : ''}.
+          </p>
         </div>
-      )}
+        {fert ? (
+          <div className="px-5 pb-5 pt-4 space-y-3">
+            {fert.generalRecommendation && (
+              <p className="text-sm text-gray-700 leading-relaxed">{fert.generalRecommendation}</p>
+            )}
+            {fert.npkGuidance && (
+              <div className="rounded-xl bg-green-50 p-3 space-y-1.5">
+                <p className="text-xs font-bold text-green-900">Nutrient guidance</p>
+                {fert.npkGuidance.note && (
+                  <p className="text-xs text-green-800">{fert.npkGuidance.note}</p>
+                )}
+                {['nitrogen', 'phosphorus', 'potassium'].map(nutrient => fert.npkGuidance[nutrient] && (
+                  <p key={nutrient} className="text-xs text-green-800">
+                    <span className="font-semibold capitalize">{nutrient}:</span> {fert.npkGuidance[nutrient]}
+                  </p>
+                ))}
+              </div>
+            )}
+            {fert.actions?.length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-gray-700 mb-1.5">Recommended actions</p>
+                {fert.actions.map((action, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-gray-600 mb-1.5">
+                    <span className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center
+                                     flex-shrink-0 mt-0.5 text-green-600 text-xs font-bold">✓</span>
+                    {action}
+                  </div>
+                ))}
+              </div>
+            )}
+            {fert.avoidActions?.length > 0 && (
+              <div className="rounded-xl bg-amber-50 p-3">
+                <p className="text-xs font-bold text-amber-900 mb-1">Avoid</p>
+                {fert.avoidActions.map((action, i) => (
+                  <p key={i} className="text-xs text-amber-800">{action}</p>
+                ))}
+              </div>
+            )}
+            {fert.warnings?.length > 0 && (
+              <div className="rounded-xl bg-amber-50 p-3 space-y-1">
+                {fert.warnings.map((warning, i) => (
+                  <p key={i} className="text-xs text-amber-800">{warning}</p>
+                ))}
+              </div>
+            )}
+            {fert.retestRecommendation && (
+              <p className="text-xs text-gray-500 italic">{fert.retestRecommendation}</p>
+            )}
+            {(fert.isDemoData || fert.dataSource?.startsWith('DEMO')) && (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                This is a general reference template, not a fertilizer rate calculated from laboratory
+                N-P-K results. Verify it with a qualified agricultural extension worker before applying.
+              </p>
+            )}
+            {fert.dataSource && (
+              <p className="text-[11px] text-gray-500">Source: {fert.dataSource}</p>
+            )}
+          </div>
+        ) : (
+          <p className="px-5 py-4 text-sm text-gray-600">
+            {serviceStatus.fuzzyEngine?.status !== 'online'
+              ? 'A result-based fertilizer recommendation is unavailable because the fuzzy assessment did not complete.'
+              : `No Firestore fertilizer recommendation is configured for ${fClass} soil${fertilizerCrop?.cropName ? ` and ${fertilizerCrop.cropName}` : ''}. Add a matching record to the fertilizer_recommendations collection.`}
+          </p>
+        )}
+      </div>
 
       {/* ── Technical Details (accordion) ──────────────────── */}
       <div className="card p-0 overflow-hidden animate-fade-in-up"

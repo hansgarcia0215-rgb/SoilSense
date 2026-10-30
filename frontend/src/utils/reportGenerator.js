@@ -235,19 +235,53 @@ export async function generatePDFReport(data) {
     y += expLines.length * 4.5 + 5;
 
     // ── Fertilizer Recommendation ─────────────────────────────────────────────
-    if (data.fertilizerRecommendationData?.generalRecommendation) {
+    const fertilizer = data.fertilizerRecommendationData;
+    if (fertilizer) {
       if (y > pageHeight - 40) { doc.addPage(); y = margin; }
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(...DARK);
       doc.text('Fertilizer Recommendation', margin, y);
       y += 6;
+
+      const fertilizerCrop = (data.rootcropResults || data.cropRecommendations || [])
+        .find(crop => crop.cropId === data.fertilizerRecommendationCropId);
+      if (fertilizerCrop?.cropName) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...DARK);
+        doc.text(`Based on ${f.fertilityClass || 'assessed'} soil fertility and ${fertilizerCrop.cropName}.`, margin, y);
+        y += 5;
+      }
+
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(...GRAY);
-      const recLines = doc.splitTextToSize(data.fertilizerRecommendationData.generalRecommendation, pageWidth - margin * 2);
-      doc.text(recLines, margin, y);
-      y += recLines.length * 4.5 + 4;
+      const recommendationLines = [
+        fertilizer.generalRecommendation,
+        fertilizer.npkGuidance?.note,
+        fertilizer.npkGuidance?.nitrogen && `Nitrogen: ${fertilizer.npkGuidance.nitrogen}`,
+        fertilizer.npkGuidance?.phosphorus && `Phosphorus: ${fertilizer.npkGuidance.phosphorus}`,
+        fertilizer.npkGuidance?.potassium && `Potassium: ${fertilizer.npkGuidance.potassium}`,
+        ...(fertilizer.actions || []).map(action => `Recommended: ${action}`),
+        ...(fertilizer.avoidActions || []).map(action => `Avoid: ${action}`),
+        ...(fertilizer.warnings || []).map(warning => `Warning: ${warning}`),
+        fertilizer.retestRecommendation,
+        fertilizer.dataSource && `Source: ${fertilizer.dataSource}`,
+        (fertilizer.isDemoData || fertilizer.dataSource?.startsWith('DEMO'))
+          ? 'Reference template only; not a fertilizer rate calculated from laboratory N-P-K results. Verify before application.'
+          : null,
+      ].filter(Boolean);
+
+      for (const line of recommendationLines) {
+        const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2);
+        if (y + wrapped.length * 4.5 > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 4.5 + 2;
+      }
     }
 
     // ── Crop Results ──────────────────────────────────────────────────────────

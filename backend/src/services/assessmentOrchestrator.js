@@ -162,7 +162,8 @@ async function runAssessment(params) {
   let fuzzyResult    = {};
   let rootcropResults = [];
   let allCropsRanked = [];
-  let fertRecommKey  = 'fert-moderate-general';
+  let fertRecommKey  = null;
+  let fertRecommCropId = null;
   let confidenceData = {};
 
   try {
@@ -205,7 +206,8 @@ async function runAssessment(params) {
       ? fd.cropRecommendations
       : fd.rootcrops || [];
     allCropsRanked  = fd.allCropsRanked || [];
-    fertRecommKey   = fd.fertilizerRecommendationKey || 'fert-moderate-general';
+    fertRecommKey   = fd.fertilizerRecommendationKey || null;
+    fertRecommCropId = rootcropResults.find(c => c.cropId)?.cropId || null;
     confidenceData  = fd.confidence;
     serviceStatus.fuzzyEngine = { status: 'online', message: null };
   } catch (err) {
@@ -228,18 +230,52 @@ async function runAssessment(params) {
 
   // ── Step 5: Fetch fertilizer recommendation from Firestore ────────────────
   let fertRecommendationData = null;
-  try {
-    // Try specific crop recommendation first, then fall back to general
-    const fertKeys = [fertRecommKey, `fert-${fuzzyResult.fertilityClass}-general`];
-    for (const key of fertKeys) {
-      const doc = await db.collection('fertilizer_recommendations').doc(key).get();
-      if (doc.exists) {
-        fertRecommendationData = doc.data();
-        break;
+  if (serviceStatus.fuzzyEngine.status === 'online') {
+    try {
+      const fertilityClass = fuzzyResult.fertilityClass;
+      const fallbackKey = `fert-${fertilityClass}-general`;
+      const recommendationKeys = [...new Set([
+        fertRecommKey,
+        fertRecommCropId ? `fert-${fertilityClass}-${fertRecommCropId}` : null,
+        fallbackKey,
+      ].filter(Boolean))];
+
+      for (const key of recommendationKeys) {
+        const doc = await db.collection('fertilizer_recommendations').doc(key).get();
+        if (doc.exists) {
+          const recommendation = doc.data();
+          const matchesFertility = recommendation.fertilityClass === fertilityClass;
+          const matchesCrop = recommendation.cropId === fertRecommCropId ||
+            recommendation.cropId === 'general';
+          if (matchesFertility && matchesCrop) {
+            fertRecommendationData = { ...recommendation, recId: doc.id };
+            break;
+          }
+        }
       }
+
+      // Older Firestore records may use generated document IDs rather than
+      // the deterministic fertilizer key, so match their stored fields too.
+      if (!fertRecommendationData) {
+        const snapshot = await db.collection('fertilizer_recommendations')
+          .where('fertilityClass', '==', fertilityClass)
+          .get();
+        const recommendations = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          recId: doc.id,
+        }));
+        fertRecommendationData =
+          recommendations.find(item => item.cropId === fertRecommCropId) ||
+          recommendations.find(item => item.cropId === 'general') ||
+          null;
+      }
+
+      if (fertRecommendationData) {
+        fertRecommKey = fertRecommendationData.recId;
+      }
+    } catch (err) {
+      console.error('[Orchestrator] Fertilizer recommendation lookup failed:', err.message);
     }
-  } catch (err) {
-    console.error('[Orchestrator] Fertilizer rec fetch error:', err.message);
   }
 
   // ── Step 6: Generate assessment ID and save to Firestore ──────────────────
@@ -298,6 +334,7 @@ async function runAssessment(params) {
     cropRecommendations: rootcropResults,
     allCropsRanked,
     fertilizerRecommendationKey:  fertRecommKey,
+    fertilizerRecommendationCropId: fertRecommCropId,
     fertilizerRecommendationData: fertRecommendationData,
     confidenceData,
 

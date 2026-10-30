@@ -1,46 +1,3 @@
-/**
- * ============================================================
- *  SoilSense ESP32 Firmware v2.0
- *  Device: ESP32 Development Board
- * ============================================================
- *
- *  CURRENTLY WIRED (what you have now):
- *  ─────────────────────────────────────
- *  YL-69 Soil Moisture Sensor
- *    AO  → GPIO 35
- *    VCC → 3.3V
- *    GND → GND
- *
- *  FUTURE SENSORS (add later, just flip the enable flags):
- *  ─────────────────────────────────────────────────────────
- *  Analog pH Module (SEN0169 or generic)
- *    AO  → GPIO 34
- *    VCC → 5V or 3.3V (check your module)
- *    GND → GND
- *
- *  DS18B20 Waterproof Temperature Probe
- *    DATA → GPIO 4  (+ 4.7kΩ pull-up resistor to 3.3V)
- *    VCC  → 3.3V
- *    GND  → GND
- *    Libraries: OneWire + DallasTemperature (install via Library Manager)
- *
- *  HOW TO USE RIGHT NOW:
- *  ─────────────────────
- *  1. Fill in your Wi-Fi SSID, password, and server IP below
- *  2. Make sure MOISTURE_SENSOR_ENABLED = true (already set)
- *  3. Open Arduino IDE → select "ESP32 Dev Module" board
- *  4. Upload the sketch
- *  5. Open Serial Monitor at 115200 baud to see readings
- *
- *  HOW TO CALIBRATE MOISTURE:
- *  ───────────────────────────
- *  1. Hold the YL-69 probe in dry air → note the ADC value in Serial Monitor
- *     → set MOISTURE_ADC_DRY to that value
- *  2. Dip the probe in a glass of water → note the ADC value
- *     → set MOISTURE_ADC_WET to that value
- *
- * ============================================================
- */
 
 // ──────────────────────────────────────────────────────────────
 //  LIBRARIES
@@ -48,34 +5,28 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-
-// Uncomment BOTH lines below when you add a DS18B20 temperature probe:
-// #include <OneWire.h>
-// #include <DallasTemperature.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 
-// ──────────────────────────────────────────────────────────────
-//  SENSOR ENABLE / DISABLE FLAGS
-//  → Only set true for sensors you have physically wired up
-// ──────────────────────────────────────────────────────────────
-const bool MOISTURE_SENSOR_ENABLED = true;   // YL-69 — you have this ✅
-const bool PH_SENSOR_ENABLED       = false;  // pH module — not yet connected
-const bool TEMP_SENSOR_ENABLED     = false;  // DS18B20 probe — not yet connected
+
+const bool MOISTURE_SENSOR_ENABLED = true;   
+const bool PH_SENSOR_ENABLED       = true; 
+const bool TEMP_SENSOR_ENABLED     = true; 
 
 
 // ──────────────────────────────────────────────────────────────
 //  WI-FI CONFIGURATION  ← UPDATE THESE
 // ──────────────────────────────────────────────────────────────
-const char* WIFI_SSID     = "B315_20312";   // ← from your Arduino IDE screenshot
-const char* WIFI_PASSWORD = "DEEABE7H4086"; // ← from your Arduino IDE screenshot
-
+const char* WIFI_SSID     = "B315_20312";
+const char* WIFI_PASSWORD = "DEEABE7H406";
 
 // ──────────────────────────────────────────────────────────────
 //  SERVER CONFIGURATION  ← UPDATE THE IP ADDRESS
 //  Find your PC's local IP: open Command Prompt → type "ipconfig"
 //  Look for "IPv4 Address" e.g. 192.168.1.5
 // ──────────────────────────────────────────────────────────────
-const char* API_URL        = "http://192.168.254.104:3001/api/sensors/reading";
+const char* API_URL        = "https://soilsense-api-xfc4.onrender.com/api/sensors/reading";
 const char* DEVICE_API_KEY = "soilsense-dev-key";   // Must match ESP32_DEVICE_API_KEY in backend/.env
 const char* DEVICE_ID      = "SS-ESP32-001";        // Unique name for this device
 
@@ -105,14 +56,6 @@ const int PIN_LED      = 2;    // Built-in LED (most ESP32 boards)
 const int MOISTURE_ADC_DRY = 3500;   // ADC when completely dry  → 0%
 const int MOISTURE_ADC_WET = 1200;   // ADC when in water        → 100%
 
-
-// ──────────────────────────────────────────────────────────────
-//  pH SENSOR CALIBRATION  (for when you add the pH module)
-//  ─────────────────────────────────────────────────────────────
-//  Calibrate using pH 4.0 and pH 7.0 buffer solutions.
-//  PH_VOLTAGE_AT_7 : measure the voltage output in pH 7.0 buffer
-//  PH_SLOPE        : (V_at_4 - V_at_7) / (4.0 - 7.0)  — negative value
-// ──────────────────────────────────────────────────────────────
 const float PH_VOLTAGE_AT_7 = 2.50;   // Volts at pH 7.0 (typical value)
 const float PH_SLOPE        = -0.18;  // Volts per pH unit
 
@@ -124,11 +67,8 @@ const float ADC_REF_VOLTAGE = 3.3;
 const int   ADC_MAX         = 4095;   // 12-bit ADC
 
 
-// ──────────────────────────────────────────────────────────────
-//  DS18B20 SETUP  (uncomment when sensor is connected)
-// ──────────────────────────────────────────────────────────────
-// OneWire           oneWireBus(PIN_TEMP);
-// DallasTemperature tempSensor(&oneWireBus);
+ OneWire           oneWireBus(PIN_TEMP);
+ DallasTemperature tempSensor(&oneWireBus);
 
 
 // ──────────────────────────────────────────────────────────────
@@ -176,12 +116,12 @@ void setup() {
   analogReadResolution(12);          // 12-bit → 0–4095
   analogSetAttenuation(ADC_11db);    // Full 3.3V range
 
-  // ── Init DS18B20 (uncomment when connected) ───────────────
-  // if (TEMP_SENSOR_ENABLED) {
-  //   tempSensor.begin();
-  //   int count = tempSensor.getDeviceCount();
-  //   Serial.println("[TEMP] DS18B20 sensors found: " + String(count));
-  // }
+
+   if (TEMP_SENSOR_ENABLED) {
+     tempSensor.begin();
+   int count = tempSensor.getDeviceCount();
+   Serial.println("[TEMP] DS18B20 sensors found: " + String(count));
+  }
 
   // ── Connect to Wi-Fi ─────────────────────────────────────
   connectWiFi();
@@ -269,18 +209,7 @@ void takeMeasurementAndSend() {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-//  SENSOR: YL-69 SOIL MOISTURE
-// ══════════════════════════════════════════════════════════════
-/**
- * Reads the YL-69 analog output and converts to 0–100%.
- *
- * The YL-69 works by measuring resistance between the two metal
- * probes. Wet soil conducts electricity better → lower ADC value.
- * Dry soil has higher resistance → higher ADC value.
- *
- * We take 10 samples and average them to reduce electrical noise.
- */
+
 float readMoisture() {
   const int SAMPLES = 10;
   long adcSum = 0;
@@ -307,21 +236,6 @@ float readMoisture() {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-//  SENSOR: ANALOG pH MODULE  (enable when you add this sensor)
-// ══════════════════════════════════════════════════════════════
-/**
- * Reads analog pH voltage and converts to pH scale 0–14.
- *
- * CALIBRATION STEPS:
- *   1. Rinse probe with distilled water
- *   2. Dip in pH 7.0 buffer solution → note voltage → set PH_VOLTAGE_AT_7
- *   3. Dip in pH 4.0 buffer solution → note voltage
- *      PH_SLOPE = (V_at_4 - V_at_7) / (4.0 - 7.0)
- *   4. Rinse and use in soil
- *
- * Formula: pH = 7.0 + (voltage - V_at_7) / slope
- */
 float readPH() {
   const int SAMPLES = 10;
   long adcSum = 0;
@@ -363,36 +277,20 @@ float readPH() {
  * Returns temperature in °C, or -999 if sensor not found.
  */
 float readTemperature() {
-  // ── Uncomment this block when DS18B20 is connected ────────
-  //
-  // tempSensor.requestTemperatures();
-  // delay(750);  // Wait for conversion (12-bit mode needs ~750ms)
-  // float tempC = tempSensor.getTempCByIndex(0);
-  //
-  // if (tempC == DEVICE_DISCONNECTED_C) {
-  //   Serial.println("  [DEBUG] DS18B20 not found on bus");
-  //   return -999.0;
-  // }
-  // return tempC;
-  // ──────────────────────────────────────────────────────────
 
-  // Sensor not connected yet — return invalid marker
+   tempSensor.requestTemperatures();
+   delay(750);  // Wait for conversion (12-bit mode needs ~750ms)
+  float tempC = tempSensor.getTempCByIndex(0);
+  
+   if (tempC == DEVICE_DISCONNECTED_C) {
+   Serial.println("  [DEBUG] DS18B20 not found on bus");
+    return -999.0;
+  }
+   return tempC;
   return -999.0;
 }
 
 
-// ══════════════════════════════════════════════════════════════
-//  SEND DATA TO SOILSENSE BACKEND
-// ══════════════════════════════════════════════════════════════
-/**
- * Builds a JSON payload and POSTs it to /api/sensors/reading.
- *
- * Only includes fields for available sensors. The backend
- * requires soilPH in the JSON — we send 7.0 (neutral) as a
- * placeholder when the pH sensor is not connected, along with
- * a phAvailable=false flag so the backend knows to treat it
- * as missing data in the confidence calculation.
- */
 bool sendToServer(float moisture, float ph, float temperature) {
   if (WiFi.status() != WL_CONNECTED) return false;
 
