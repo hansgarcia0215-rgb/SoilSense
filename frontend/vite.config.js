@@ -24,6 +24,12 @@ export default defineConfig({
             urlPattern: /^https?:\/\/.*\/api\/health\/services(?:\?.*)?$/,
             handler: 'NetworkOnly',
           },
+          // Sensor status must always reflect the newest server-side reading,
+          // never a cached NetworkFirst response from an earlier assessment page visit.
+          {
+            urlPattern: /^https?:\/\/.*\/api\/sensors\/latest\/[^/?]+(?:\?.*)?$/,
+            handler: 'NetworkOnly',
+          },
           // API — network first, fall back to cache
           {
             urlPattern: /^https?:\/\/.*\/api\//,

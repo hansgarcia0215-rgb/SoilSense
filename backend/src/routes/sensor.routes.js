@@ -30,7 +30,8 @@ router.post('/reading',
     next();
   },
   [
-    body('deviceId').trim().notEmpty().withMessage('deviceId is required.'),
+    body('deviceId').trim().matches(/^[A-Za-z0-9_-]{1,64}$/)
+      .withMessage('deviceId must contain only letters, numbers, hyphens, or underscores.'),
     body('soilPH').notEmpty().isFloat({ min: 0, max: 14 }).withMessage('pH must be 0–14.'),
     body('soilMoisture').notEmpty().isFloat({ min: 0, max: 100 }).withMessage('Moisture must be 0–100%.'),
     // Temperature is optional — not all boards have a temp sensor
@@ -56,8 +57,13 @@ router.post('/reading',
         isValid:         true,
       };
 
-      const ref = await db.collection('sensor_readings').add(reading);
-      res.json({ success: true, readingId: ref.id, receivedAt: reading.receivedAt });
+      const readingRef = db.collection('sensor_readings').doc();
+      const latestRef = db.collection('sensor_devices').doc(deviceId);
+      const batch = db.batch();
+      batch.set(readingRef, reading);
+      batch.set(latestRef, reading);
+      await batch.commit();
+      res.json({ success: true, readingId: readingRef.id, receivedAt: reading.receivedAt });
     } catch (err) {
       next(err);
     }
@@ -71,23 +77,31 @@ router.get('/latest/:deviceId',
     try {
       const { deviceId } = req.params;
 
-      const snapshot = await db.collection('sensor_readings')
-        .where('deviceId', '==', deviceId)
-        .limit(20)
-        .get();
+      const latestDoc = await db.collection('sensor_devices').doc(deviceId).get();
+      let reading;
 
-      if (snapshot.empty) {
-        return res.json({ success: true, found: false, message: 'No readings found for this device.' });
+      if (latestDoc.exists) {
+        reading = latestDoc.data();
+      } else {
+        // Fall back to the historical readings written before latest-document tracking.
+        const snapshot = await db.collection('sensor_readings')
+          .where('deviceId', '==', deviceId)
+          .limit(20)
+          .get();
+
+        if (snapshot.empty) {
+          return res.json({ success: true, found: false, message: 'No readings found for this device.' });
+        }
+
+        const readings = snapshot.docs.map(doc => doc.data());
+        readings.sort((a, b) => {
+          const timeA = a.receivedAt?.toMillis?.() ?? new Date(a.receivedAt).getTime();
+          const timeB = b.receivedAt?.toMillis?.() ?? new Date(b.receivedAt).getTime();
+          return timeB - timeA;
+        });
+        reading = readings[0];
       }
 
-      const readings = snapshot.docs.map(d => d.data());
-      readings.sort((a, b) => {
-        const tA = a.receivedAt?.toMillis?.() ?? new Date(a.receivedAt).getTime();
-        const tB = b.receivedAt?.toMillis?.() ?? new Date(b.receivedAt).getTime();
-        return tB - tA;
-      });
-
-      const reading    = readings[0];
       const receivedAt = reading.receivedAt?.toDate?.() || new Date(reading.receivedAt);
       const secondsAgo = Math.round((Date.now() - receivedAt.getTime()) / 1000);
       const isStale    = secondsAgo > 60;
