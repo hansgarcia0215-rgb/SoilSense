@@ -64,6 +64,79 @@ OUTPUT_CENTERS = {
     "fertile":  82.0,
 }
 
+PH_SCREENING_POINTS = {
+    "strongly_acidic": 15.0,
+    "acidic": 45.0,
+    "slightly_acidic": 75.0,
+    "optimal": 100.0,
+    "slightly_alkaline": 75.0,
+    "alkaline": 40.0,
+}
+
+MOISTURE_SCREENING_POINTS = {
+    "very_dry": 25.0,
+    "dry": 60.0,
+    "moderate": 100.0,
+    "wet": 65.0,
+    "very_wet": 25.0,
+}
+
+
+def _membership_score(memberships: dict, points: dict) -> float | None:
+    total_membership = sum(memberships.get(label, 0.0) for label in points)
+    if total_membership <= 0:
+        return None
+    return sum(
+        memberships.get(label, 0.0) * points[label]
+        for label in points
+    ) / total_membership
+
+
+def _calculate_screening_score(
+    ph: float | None,
+    moisture: float | None,
+    visual_condition: str | None,
+) -> tuple[float | None, list[dict]]:
+    factors = []
+
+    if ph is not None and 0 <= ph <= 14:
+        factors.append({
+            "name": "pH condition",
+            "score": _membership_score(ph_membership(ph), PH_SCREENING_POINTS),
+            "input": round(float(ph), 2),
+            "unit": "pH",
+        })
+
+    if moisture is not None and 0 <= moisture <= 100:
+        factors.append({
+            "name": "Moisture condition",
+            "score": _membership_score(
+                moisture_membership(moisture),
+                MOISTURE_SCREENING_POINTS,
+            ),
+            "input": round(float(moisture), 1),
+            "unit": "%",
+        })
+
+    visual_points = {"good": 100.0, "moderate": 65.0, "poor": 30.0}
+    if visual_condition in visual_points:
+        factors.append({
+            "name": "Visual condition",
+            "score": visual_points[visual_condition],
+            "input": visual_condition,
+            "unit": None,
+        })
+
+    if not factors:
+        return None, factors
+
+    score = sum(factor["score"] for factor in factors) / len(factors)
+    for factor in factors:
+        factor["score"] = round(factor["score"], 1)
+        factor["weightPercent"] = round(100 / len(factors), 1)
+
+    return round(score, 1), factors
+
 
 def infer_fertility(ph: float, moisture: float, visual_condition: str,
                     rules: list = None) -> dict:
@@ -78,8 +151,10 @@ def infer_fertility(ph: float, moisture: float, visual_condition: str,
 
     Returns:
         dict with:
-            fertilityClass  str     "fertile" | "moderate" | "poor"
-            fertilityScore  float   0–100 (crisp output)
+            fertilityClass  str     legacy fuzzy-rule class ("fertile" | "moderate" | "poor")
+            fertilityScore  float   legacy fuzzy-rule output score (0–100)
+            screeningScore  float   separate input-driven condition index, or None
+            screeningFactors list   available pH, moisture, and image factor scores
             confidence      float   0–100 (assessment confidence %)
             activatedRules  list    IDs of rules that fired
             phFuzzySet      str     dominant pH fuzzy set
@@ -117,7 +192,13 @@ def infer_fertility(ph: float, moisture: float, visual_condition: str,
         }
         moisture_fuzzy_set = "unknown"
 
+    has_visual_condition = visual_condition in {"good", "moderate", "poor"}
     visual_memberships = visual_condition_membership(visual_condition)
+    screening_score, screening_factors = _calculate_screening_score(
+        ph if has_ph else None,
+        moisture if has_moisture else None,
+        visual_condition if has_visual_condition else None,
+    )
 
     # ── 2. RULE EVALUATION ────────────────────────────────────────────────────
     # For each rule: firing_strength = min(antecedent memberships)
@@ -218,6 +299,15 @@ def infer_fertility(ph: float, moisture: float, visual_condition: str,
     return {
         "fertilityClass":    fertility_class,
         "fertilityScore":    fertility_score,
+        "screeningScore":    screening_score,
+        "screeningFactors":  screening_factors,
+        "screeningClass": (
+            "needs_attention" if screening_score is not None and screening_score < 40
+            else "mixed" if screening_score is not None and screening_score < 70
+            else "favorable" if screening_score is not None
+            else None
+        ),
+        "screeningMethod":  "unvalidated_input_screening_index_v1",
         "confidence":        round(confidence, 1),
         "confidenceLevel":   "high" if confidence >= 75 else "limited",
         "phFuzzySet":        ph_fuzzy_set,
@@ -232,10 +322,31 @@ def infer_fertility(ph: float, moisture: float, visual_condition: str,
         "inputsUsed": {
             "ph":             has_ph,
             "moisture":       has_moisture,
-            "visualCondition": True,
+            "visualCondition": has_visual_condition,
         },
-        "explanation":   explanations["summary"],
-        "explanationList": explanations["factors"],
+        "explanation": (
+            (
+                f"The fuzzy rules classified this sample as {fertility_class.upper()}. "
+                if activated
+                else f"No fuzzy rules matched these inputs; the legacy rule class defaults to {fertility_class.upper()}. "
+            )
+            + (
+                f"The separate soil condition screening index is {screening_score}/100, "
+                "computed from available pH, moisture, and image-condition inputs; "
+                "it is not a nutrient fertility measurement."
+                if screening_score is not None
+                else "A soil condition screening score is unavailable because no valid pH, moisture, or image-condition input was available."
+            )
+        ),
+        "explanationList": explanations["factors"] + [
+            f"{factor['name']}: {factor['score']}/100."
+            for factor in screening_factors
+        ],
+        "screeningDisclaimer": (
+            "Preliminary, unvalidated screening index based only on available pH, "
+            "moisture, and visual-condition inputs. It does not measure soil "
+            "nitrogen, phosphorus, potassium, or overall nutrient fertility."
+        ),
     }
 
 
@@ -306,7 +417,13 @@ def _generate_explanations(ph, has_ph, moisture, has_moisture, visual_condition,
     else:
         factors.append("Soil moisture was not measured.")
 
-    visual_labels = {"good": "good", "moderate": "moderate", "poor": "poor — consider retaking the photo"}
+    visual_labels = {
+        "good": "good",
+        "moderate": "moderate",
+        "poor": "poor — consider retaking the photo",
+        "unknown": "unavailable",
+        None: "unavailable",
+    }
     factors.append(f"Soil image quality is {visual_labels.get(visual_condition, visual_condition)}.")
 
     if len(activated) > 0:

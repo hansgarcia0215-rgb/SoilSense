@@ -1,5 +1,5 @@
 /**
- * FertilityTrendChart.jsx — Recharts line chart with gradient fill
+ * FertilityTrendChart.jsx — Recharts line chart for the soil-condition index
  */
 
 import {
@@ -15,7 +15,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return (
     <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100 shadow-card-hover px-4 py-2.5">
       <p className="text-xs text-gray-500 mb-0.5">{label}</p>
-      <p className={`text-base font-black ${cls}`}>{val}<span className="text-xs font-medium text-gray-300">/100</span></p>
+      <p className={`text-base font-black ${cls}`}>{val}<span className="text-xs font-medium text-gray-300"> index /100</span></p>
     </div>
   );
 };
@@ -35,7 +35,7 @@ export default function FertilityTrendChart({ points }) {
   if (!points?.length) {
     return (
       <div className="text-center py-8 text-xs text-gray-500">
-        Complete more assessments to see your soil fertility trend here.
+        Complete assessments with valid input data to see the soil-condition index trend.
       </div>
     );
   }
@@ -43,7 +43,7 @@ export default function FertilityTrendChart({ points }) {
   const data = points.map(p => ({
     date:  format(new Date(p.date), 'MMM d'),
     score: p.score,
-    class: p.fertilityClass,
+    class: p.screeningClass,
   }));
 
   return (
@@ -56,7 +56,7 @@ export default function FertilityTrendChart({ points }) {
           </linearGradient>
         </defs>
 
-        {/* Fertility zone bands */}
+        {/* Screening-index reference bands */}
         <ReferenceArea y1={0}  y2={40}  fill="#f7e8e0" fillOpacity={0.5} />
         <ReferenceArea y1={40} y2={70}  fill="#f7efdc" fillOpacity={0.5} />
         <ReferenceArea y1={70} y2={100} fill="#eef3e4" fillOpacity={0.5} />

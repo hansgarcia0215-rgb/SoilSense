@@ -126,8 +126,8 @@ export default function AssessmentHistory() {
                 ? new Date(a.createdAt._seconds * 1000)
                 : a.createdAt ? new Date(a.createdAt) : null;
               const scoreColor =
-                a.fertilityClass === 'fertile'  ? 'bg-green-500' :
-                a.fertilityClass === 'moderate' ? 'bg-amber-500' : 'bg-red-500';
+                a.screeningClass === 'favorable' ? 'bg-green-500' :
+                a.screeningClass === 'needs_attention' ? 'bg-red-500' : 'bg-amber-500';
 
               return (
                 <li key={a.assessmentId}
@@ -149,12 +149,15 @@ export default function AssessmentHistory() {
                                       flex items-center justify-center flex-shrink-0
                                       text-white text-sm font-black shadow-sm
                                       group-hover:scale-110 transition-transform duration-200`}>
-                        {a.fertilityScore ?? '—'}
+                        {a.screeningScore ?? a.fertilityScore ?? '—'}
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <FertilityBadge classification={a.fertilityClass} size="sm" showEmoji={false} />
+                          <span className="text-xs font-bold capitalize text-gray-700">
+                            {a.screeningClass?.replace(/_/g, ' ') ||
+                              `${a.fertilityClass || 'Unknown'} (legacy result)`}
+                          </span>
                           {a.hasLabValidation && (
                             <span className="text-[10px] bg-blue-100 text-blue-600
                                              px-1.5 py-0.5 rounded-full font-bold">Lab ✓</span>

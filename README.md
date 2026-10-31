@@ -77,6 +77,14 @@ does not measure N-P-K, so mineral fertilizer type, rate, and repeat timing must
 come from a soil test and locally verified crop guidance. Perennial crops need
 an age- and growth-stage-specific plan.
 
+The assessment result also shows a separate preliminary soil-condition
+screening index derived from the available pH, moisture, and image-condition
+inputs. Its factor scores are equally weighted, and missing inputs are omitted
+rather than replaced with a default. This index is experimental, not field
+validated, and is not a fertility percentage or a substitute for laboratory
+N-P-K analysis. The fuzzy-rule classification remains available internally for
+crop ranking and legacy compatibility.
+
 To optionally personalize the guidance, create a Gemini API key in
 [Google AI Studio](https://aistudio.google.com/apikey) and set `GEMINI_API_KEY`
 in `backend/.env` for local development or in the **SoilSense API** Render

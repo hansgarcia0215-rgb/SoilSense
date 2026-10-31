@@ -89,7 +89,7 @@ export default function ResearchAnalytics() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={<Target className="w-5 h-5 text-green-600" />}  iconBg="bg-green-100" label="Total Assessments"   value={summary?.totalAssessments ?? '—'} />
         <StatCard icon={<CalendarDays className="w-5 h-5 text-blue-600" />} iconBg="bg-blue-100" label="Assessments This Week" value={summary?.thisWeek ?? '—'} />
-        <StatCard icon={<TrendingUp className="w-5 h-5 text-amber-600" />} iconBg="bg-amber-100" label="Average Fertility Score" value={summary?.avgFertilityScore != null ? `${summary.avgFertilityScore}/100` : '—'} />
+        <StatCard icon={<TrendingUp className="w-5 h-5 text-amber-600" />} iconBg="bg-amber-100" label="Average Condition Index" value={summary?.avgScreeningScore != null ? `${summary.avgScreeningScore}/100` : '—'} />
         <StatCard icon={<Clock className="w-5 h-5 text-purple-600" />}  iconBg="bg-purple-100" label="Avg Processing Time"  value={timing?.avgTotalMs != null ? `${(timing.avgTotalMs/1000).toFixed(1)}s` : '—'} />
       </div>
 

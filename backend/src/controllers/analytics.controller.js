@@ -48,11 +48,11 @@ async function getSummary(req, res, next) {
       return ts >= oneWeekAgo;
     }).length;
 
-    // Average fertility score
+    // Average only the new screening index; legacy fuzzy class scores are not comparable.
     const scores = assessments
-      .map(a => a.fuzzyResult?.fertilityScore)
+      .map(a => a.fuzzyResult?.screeningScore)
       .filter(s => s != null);
-    const avgFertilityScore = scores.length > 0
+    const avgScreeningScore = scores.length > 0
       ? scores.reduce((sum, s) => sum + s, 0) / scores.length
       : null;
 
@@ -92,8 +92,8 @@ async function getSummary(req, res, next) {
       data: {
         totalAssessments: assessments.length,
         thisWeek,
-        avgFertilityScore: avgFertilityScore != null
-          ? Math.round(avgFertilityScore * 10) / 10
+        avgScreeningScore: avgScreeningScore != null
+          ? Math.round(avgScreeningScore * 10) / 10
           : null,
         topRecommendedCrop,
         topRecommendedCrops,
@@ -253,10 +253,10 @@ async function getTrend(req, res, next) {
       snapshot = await db.collection('soil_assessments').get();
     }
 
-    // Map to {date, score, class, barangay} and keep only completed with a score
+    // Trend only the input-driven screening index; legacy rule scores are a different measure.
     const points = snapshot.docs
       .map(d => d.data())
-      .filter(a => a.status === 'completed' && a.fuzzyResult?.fertilityScore != null)
+      .filter(a => a.status === 'completed' && a.fuzzyResult?.screeningScore != null)
       .map(a => {
         const ts = a.createdAt?._seconds
           ? new Date(a.createdAt._seconds * 1000)
@@ -264,8 +264,8 @@ async function getTrend(req, res, next) {
         return {
           assessmentId: a.assessmentId,
           date:         ts.toISOString(),
-          score:        a.fuzzyResult.fertilityScore,
-          fertilityClass: a.fuzzyResult.fertilityClass,
+          score:        a.fuzzyResult.screeningScore,
+          screeningClass: a.fuzzyResult.screeningClass,
           barangay:     a.location?.barangay || null,
           bestCrop:     a.rootcropResults?.find(r => r.rank === 1)?.cropName || null,
         };

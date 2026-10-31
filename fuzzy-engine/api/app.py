@@ -246,6 +246,11 @@ def infer():
             "aggregation":      fuzzy_result.get("aggregation", {}),
             "explanation":      fuzzy_result.get("explanation", ""),
             "explanationList":  fuzzy_result.get("explanationList", []),
+            "screeningScore":   fuzzy_result.get("screeningScore"),
+            "screeningFactors": fuzzy_result.get("screeningFactors", []),
+            "screeningClass":   fuzzy_result.get("screeningClass"),
+            "screeningMethod":  fuzzy_result.get("screeningMethod"),
+            "screeningDisclaimer": fuzzy_result.get("screeningDisclaimer"),
         },
 
         "confidence": confidence_result,

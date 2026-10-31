@@ -172,7 +172,9 @@ async function runAssessment(params) {
     const fuzzyPayload = {
       ph:             soilPH   != null ? parseFloat(soilPH)   : null,
       moisture:       soilMoisture != null ? parseFloat(soilMoisture) : null,
-      visualCondition: derivedInputs.visual_condition || 'moderate',
+      visualCondition: serviceStatus.imageProcessing.status === 'online'
+        ? derivedInputs.visual_condition || 'moderate'
+        : 'unknown',
       imageQuality:   derivedInputs.image_quality    || 'moderate',
       hasGPS:         !!(latitude && longitude),
       crops,
@@ -195,6 +197,11 @@ async function runAssessment(params) {
     fuzzyResult = {
       fertilityClass:   fd.fertility.classification,
       fertilityScore:   fd.fertility.score,
+      screeningScore:   fd.fertility.screeningScore ?? null,
+      screeningFactors: fd.fertility.screeningFactors || [],
+      screeningClass:   fd.fertility.screeningClass || null,
+      screeningMethod:  fd.fertility.screeningMethod || null,
+      screeningDisclaimer: fd.fertility.screeningDisclaimer || null,
       confidence:       fd.confidence.score,
       confidenceLevel:  fd.confidence.level,
       phFuzzySet:       fd.fertility.phFuzzySet,
@@ -219,13 +226,18 @@ async function runAssessment(params) {
         ? 'Service API key was rejected. Match SERVICE_API_KEY across the API and both Python services.'
         : err.response?.data?.message || err.message,
     };
-    // Fallback fertility result
+    // Keep unavailable engine output visibly unavailable instead of substituting a score.
     fuzzyResult = {
-      fertilityClass: 'moderate',
-      fertilityScore: 50,
-      confidence:     40,
+      fertilityClass: 'unknown',
+      fertilityScore: null,
+      screeningScore: null,
+      screeningFactors: [],
+      screeningClass: null,
+      screeningMethod: 'unvalidated_input_screening_index_v1',
+      screeningDisclaimer: 'The fuzzy engine was unavailable; no condition screening score could be produced.',
+      confidence:     null,
       confidenceLevel: 'limited',
-      explanation: 'Fuzzy engine unavailable. Result is a default fallback. Please try again.',
+      explanation: 'Fuzzy engine unavailable. No screening score was produced; check the service and retry.',
     };
   }
 

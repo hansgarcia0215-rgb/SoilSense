@@ -15,7 +15,6 @@ import {
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
-import FertilityBadge from '../components/common/FertilityBadge';
 import AssessmentPhoto from '../components/common/AssessmentPhoto';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
@@ -152,8 +151,13 @@ export default function Reports() {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <FertilityBadge classification={a.fertilityClass} size="sm" />
-                      <span className="text-sm font-bold text-gray-900">{a.fertilityScore}/100</span>
+                      <span className="text-xs font-bold capitalize text-gray-700">
+                        {a.screeningClass?.replace(/_/g, ' ') ||
+                          `${a.fertilityClass || 'Unknown'} (legacy result)`}
+                      </span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {a.screeningScore ?? a.fertilityScore ?? '—'}/100
+                      </span>
                       <span className="text-xs font-mono text-gray-300">{a.assessmentId}</span>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">

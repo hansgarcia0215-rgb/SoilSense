@@ -130,7 +130,13 @@ export async function generatePDFReport(data) {
     doc.text('SOILSENSE', margin, 12);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text('Soil Fertility Assessment Report', margin, 19);
+    doc.text(
+      data.fuzzyResult?.screeningMethod === 'unvalidated_input_screening_index_v1'
+        ? 'Soil Condition Screening Report'
+        : 'Soil Fertility Assessment Report',
+      margin,
+      19
+    );
     doc.setFontSize(8);
     doc.text(`${data.assessmentId || ''}  -  ${dateStr}`, pageWidth - margin, 19, { align: 'right' });
 
@@ -178,11 +184,17 @@ export async function generatePDFReport(data) {
       y += imageHeight + 6;
     }
 
-    // ── Fertility Result ───────────────────────────────────────────────────────
+    // ── Screening Result ───────────────────────────────────────────────────────
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...DARK);
-    doc.text('Soil Fertility Result', margin, y);
+    const hasScreeningModel = f.screeningMethod === 'unvalidated_input_screening_index_v1';
+    const screeningScore = Number.isFinite(f.screeningScore) ? f.screeningScore : null;
+    doc.text(
+      hasScreeningModel ? 'Soil Condition Screening' : 'Legacy Fuzzy Fertility Result',
+      margin,
+      y
+    );
     y += 6;
 
     const fertColor = getFertilityColor(f.fertilityClass);
@@ -191,14 +203,50 @@ export async function generatePDFReport(data) {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.text(String(f.fertilityClass || 'UNKNOWN').toUpperCase(), margin + 8, y + 8);
+    doc.text(
+      String(hasScreeningModel
+        ? f.screeningClass || 'NO SCORE'
+        : `${f.fertilityClass || 'UNKNOWN'} (LEGACY RESULT)`)
+        .replace(/_/g, ' ')
+        .toUpperCase(),
+      margin + 8,
+      y + 8
+    );
     doc.setFontSize(11);
-    doc.text(`Score: ${f.fertilityScore ?? '—'} / 100`, margin + 8, y + 15);
+    doc.text(
+      `${hasScreeningModel ? 'Screening index' : 'Legacy rule score'}: ${
+        hasScreeningModel ? screeningScore ?? '—' : f.fertilityScore ?? '—'
+      } / 100`,
+      margin + 8,
+      y + 15
+    );
     doc.setFontSize(10);
     doc.text(`Confidence: ${f.confidence ?? '—'}%  (${f.confidenceLevel || '—'})`,
       pageWidth - margin - 8, y + 11, { align: 'right' });
 
     y += 28;
+    if (hasScreeningModel) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...GRAY);
+      const factorLines = (f.screeningFactors || []).map(
+        factor => `${factor.name}: ${factor.score}/100`
+      );
+      factorLines.push(
+        f.screeningDisclaimer ||
+          'Preliminary, unvalidated screening index; it does not measure soil nutrient fertility or N-P-K.'
+      );
+      for (const line of factorLines) {
+        const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2);
+        if (y + wrapped.length * 4.5 > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(wrapped, margin, y);
+        y += wrapped.length * 4.5 + 2;
+      }
+      y += 2;
+    }
 
     // ── Measurements ──────────────────────────────────────────────────────────
     doc.setFont('helvetica', 'bold');

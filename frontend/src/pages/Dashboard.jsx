@@ -10,7 +10,6 @@ import {
   Minus, Leaf, ArrowRight, MapPin, Calendar, Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import FertilityBadge from '../components/common/FertilityBadge';
 import AssessmentPhoto from '../components/common/AssessmentPhoto';
 import { SkeletonStatCard, SkeletonRow } from '../components/common/SkeletonLoader';
 import FertilityTrendChart from '../components/charts/FertilityTrendChart';
@@ -145,7 +144,7 @@ export default function Dashboard() {
           <>
             <StatCard icon={<ClipboardList className="w-5 h-5 text-blue-600" />}  iconBg="bg-blue-50"   label="Total Assessments"   value={stats?.totalAssessments ?? 0} delay={0} />
             <StatCard icon={<Calendar      className="w-5 h-5 text-purple-600" />} iconBg="bg-purple-50" label="This Week"            value={stats?.thisWeek ?? 0}          delay={80} />
-            <StatCard icon={<TrendingUp    className="w-5 h-5 text-amber-600" />}  iconBg="bg-amber-50"  label="Avg Fertility Score"  value={stats?.avgFertilityScore ? parseFloat(stats.avgFertilityScore.toFixed(1)) : null} delay={160} />
+            <StatCard icon={<TrendingUp    className="w-5 h-5 text-amber-600" />}  iconBg="bg-amber-50"  label="Avg Condition Index"  value={stats?.avgScreeningScore != null ? parseFloat(stats.avgScreeningScore.toFixed(1)) : null} delay={160} />
             <StatCard icon={<Leaf          className="w-5 h-5 text-green-600" />}  iconBg="bg-green-50"  label="Top Recommended Crop" value={stats?.topRecommendedCrop || '—'} small delay={240} />
           </>
         )}
@@ -179,17 +178,22 @@ export default function Dashboard() {
                 <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
                   <circle cx="32" cy="32" r="28" fill="none" stroke="#f3f4f6" strokeWidth="6" />
                   <circle cx="32" cy="32" r="28" fill="none"
-                    stroke={latest.fertilityClass === 'fertile' ? '#4a652e' : latest.fertilityClass === 'moderate' ? '#b0722a' : '#a8402f'}
+                    stroke={latest.screeningClass === 'favorable' ? '#4a652e' : latest.screeningClass === 'needs_attention' ? '#a8402f' : '#b0722a'}
                     strokeWidth="6" strokeLinecap="round"
-                    strokeDasharray={`${(latest.fertilityScore / 100) * 175.9} 175.9`} />
+                    strokeDasharray={`${((latest.screeningScore ?? latest.fertilityScore ?? 0) / 100) * 175.9} 175.9`} />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-black text-gray-900">{latest.fertilityScore}</span>
+                  <span className="text-sm font-black text-gray-900">
+                    {latest.screeningScore ?? latest.fertilityScore ?? '—'}
+                  </span>
                 </div>
               </div>
 
               <div className="flex-1 min-w-0 space-y-1.5">
-                <FertilityBadge classification={latest.fertilityClass} size="sm" />
+                <span className="text-xs font-bold capitalize text-gray-700">
+                  {latest.screeningClass?.replace(/_/g, ' ') ||
+                    `${latest.fertilityClass || 'Unknown'} (legacy result)`}
+                </span>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   {latest.location?.barangay || 'Roxas'}
@@ -210,7 +214,7 @@ export default function Dashboard() {
           <div className="card animate-fade-in-up" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Fertility Over Time
+                Condition Index Over Time
               </span>
               <span className="text-xs text-gray-500 font-mono">{trend.count} pts</span>
             </div>
@@ -268,13 +272,16 @@ export default function Dashboard() {
                       />
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0
                                       text-white text-xs font-black
-                                      ${a.fertilityClass === 'fertile'  ? 'bg-green-600' :
-                                        a.fertilityClass === 'moderate' ? 'bg-soil-500' : 'bg-[#a8402f]'}`}>
-                        {a.fertilityScore}
+                                      ${a.screeningClass === 'favorable' ? 'bg-green-600' :
+                                        a.screeningClass === 'needs_attention' ? 'bg-[#a8402f]' : 'bg-soil-500'}`}>
+                        {a.screeningScore ?? a.fertilityScore ?? '—'}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <FertilityBadge classification={a.fertilityClass} size="sm" showEmoji={false} />
+                          <span className="text-xs font-bold capitalize text-gray-700">
+                            {a.screeningClass?.replace(/_/g, ' ') ||
+                              `${a.fertilityClass || 'Unknown'} (legacy result)`}
+                          </span>
                           {a.hasLabValidation && (
                             <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5
                                              rounded-full font-semibold">Lab</span>

@@ -95,6 +95,11 @@ export default function AssessmentResult() {
   );
 
   const f      = data.fuzzyResult    || {};
+  const screeningScore = Number.isFinite(f.screeningScore) ? f.screeningScore : null;
+  const screeningClass = f.screeningClass || null;
+  const screeningFactors = Array.isArray(f.screeningFactors) ? f.screeningFactors : [];
+  const hasScreeningModel = f.screeningMethod === 'unvalidated_input_screening_index_v1';
+  const displayScore = hasScreeningModel ? screeningScore : f.fertilityScore ?? null;
   const sensor = data.sensorData     || {};
   const img    = data.imageFeatures  || {};
   const serviceStatus = data.serviceStatus || {};
@@ -149,15 +154,32 @@ export default function AssessmentResult() {
     : new Date(data.createdAt);
 
   const fClass = f.fertilityClass || 'moderate';
+  const displayClass = screeningClass === 'favorable'
+    ? 'fertile'
+    : screeningClass === 'needs_attention'
+      ? 'poor'
+      : screeningClass
+        ? 'moderate'
+        : fClass;
+  const screeningColor = screeningClass === 'favorable'
+    ? 'text-green-600'
+    : screeningClass === 'needs_attention'
+      ? 'text-red-500'
+      : 'text-amber-600';
+  const screeningStroke = screeningClass === 'favorable'
+    ? '#22c55e'
+    : screeningClass === 'needs_attention'
+      ? '#ef4444'
+      : '#f59e0b';
   const fertGradient =
-    fClass === 'fertile'  ? 'from-green-500 to-emerald-600' :
-    fClass === 'moderate' ? 'from-amber-400 to-orange-500'  : 'from-red-500 to-rose-600';
+    displayClass === 'fertile'  ? 'from-green-500 to-emerald-600' :
+    displayClass === 'moderate' ? 'from-amber-400 to-orange-500'  : 'from-red-500 to-rose-600';
   const fertBg =
-    fClass === 'fertile'  ? 'from-green-50 to-emerald-50/60' :
-    fClass === 'moderate' ? 'from-amber-50 to-yellow-50/60'  : 'from-red-50  to-rose-50/60';
+    displayClass === 'fertile'  ? 'from-green-50 to-emerald-50/60' :
+    displayClass === 'moderate' ? 'from-amber-50 to-yellow-50/60'  : 'from-red-50  to-rose-50/60';
   const fertBorder =
-    fClass === 'fertile'  ? 'border-green-200' :
-    fClass === 'moderate' ? 'border-amber-200' : 'border-red-200';
+    displayClass === 'fertile'  ? 'border-green-200' :
+    displayClass === 'moderate' ? 'border-amber-200' : 'border-red-200';
 
   const bestCrop = crops.find(c => c.status === 'BEST' || c.status === 'CLOSEST');
   const fertilizerCrop = crops.find(c => c.cropId === data.fertilizerRecommendationCropId) || bestCrop;
@@ -216,30 +238,42 @@ export default function AssessmentResult() {
             {/* Score */}
             <div className="flex-shrink-0 text-center">
               <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Soil Fertility
+                {hasScreeningModel ? 'Soil Condition Screening' : 'Legacy Fuzzy Result'}
               </div>
-              <FertilityBadge classification={fClass} size="md" />
+              {screeningClass ? (
+                <div className={`text-xs font-bold capitalize ${screeningColor}`}>
+                  {screeningClass.replace(/_/g, ' ')} conditions
+                </div>
+              ) : hasScreeningModel ? (
+                <div className="text-xs font-bold text-amber-700">Score unavailable</div>
+              ) : (
+                <FertilityBadge classification={fClass} size="md" />
+              )}
               {/* SVG arc score */}
               <div className="relative w-24 h-24 mx-auto mt-2">
                 <svg className="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
                   <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" strokeWidth="8" />
                   <circle cx="48" cy="48" r="40" fill="none"
-                    stroke={fClass === 'fertile' ? '#22c55e' : fClass === 'moderate' ? '#f59e0b' : '#ef4444'}
+                    stroke={screeningScore != null
+                      ? screeningStroke
+                      : fClass === 'fertile' ? '#22c55e' : fClass === 'moderate' ? '#f59e0b' : '#ef4444'}
                     strokeWidth="8" strokeLinecap="round"
-                    strokeDasharray={`${((f.fertilityScore ?? 0) / 100) * 251.3} 251.3`}
+                    strokeDasharray={`${((displayScore ?? 0) / 100) * 251.3} 251.3`}
                     style={{ transition: 'stroke-dasharray 1.2s cubic-bezier(0.16,1,0.3,1)' }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-2xl font-black text-gray-900 leading-none tabular-nums">
-                    {f.fertilityScore ?? 50}
+                    {displayScore ?? '—'}
                   </span>
-                  <span className="text-[10px] text-gray-500 font-medium">/100</span>
+                  <span className="text-[10px] text-gray-500 font-medium">
+                    {hasScreeningModel ? 'index /100' : 'legacy /100'}
+                  </span>
                 </div>
               </div>
               <div className={`text-xs font-semibold mt-1.5
                 ${f.confidenceLevel === 'high' ? 'text-green-600' : 'text-amber-500'}`}>
-                {f.confidenceLevel === 'high' ? '🎯' : '⚠️'} {f.confidence ?? 40}% conf.
+                {f.confidenceLevel === 'high' ? '🎯' : '⚠️'} {f.confidence ?? '—'}% rule confidence
               </div>
             </div>
 
@@ -298,6 +332,32 @@ export default function AssessmentResult() {
               {f.explanation}
             </p>
           )}
+          {hasScreeningModel && screeningScore == null && (
+            <p className="mt-4 border-t border-white/60 pt-4 text-xs text-amber-800">
+              No screening score is available. Provide a valid pH or moisture reading, or an image analysis result.
+            </p>
+          )}
+          {screeningScore != null && (
+            <div className="mt-4 border-t border-white/60 pt-4">
+              <p className="text-[11px] font-bold text-gray-600 uppercase tracking-wide">
+                Screening factors · equally weighted
+              </p>
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {screeningFactors.map(factor => (
+                  <div key={factor.name} className="rounded-xl bg-white/70 p-2.5">
+                    <p className="text-[11px] font-semibold text-gray-600">{factor.name}</p>
+                    <p className="text-sm font-black text-gray-800">
+                      {factor.score}<span className="text-[10px] font-medium text-gray-400">/100</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-amber-800">
+                {f.screeningDisclaimer || 'This preliminary index uses available pH, moisture, and image-condition inputs. It is not a laboratory measurement of soil fertility or N-P-K.'}
+                {' '}Sensor calibration and field validation are required; rule confidence is not accuracy.
+              </p>
+            </div>
+          )}
 
           {/* Service warning */}
           {(!img.imageQuality || img.imageQuality === 'unknown') && (
@@ -337,12 +397,12 @@ export default function AssessmentResult() {
             <div>
               <h2 className="font-black text-gray-900 text-base">Crop Recommendation</h2>
               <p className="text-xs text-gray-500">
-                Based on{' '}
+                Crop ranking uses the fuzzy rule class{' '}
                 <span className={`font-bold capitalize
                   ${fClass === 'fertile' ? 'text-green-600' :
                     fClass === 'moderate' ? 'text-amber-600' : 'text-red-500'}`}>
                   {fClass}
-                </span> soil
+                </span>
                 {bestCrop && (
                   <> · Best match: <span className="font-bold text-green-600">{bestCrop.cropName}</span></>
                 )}
@@ -462,7 +522,7 @@ export default function AssessmentResult() {
                     </tbody>
                   </table>
                   <p className="text-xs text-gray-500 px-4 py-3 bg-gray-50 border-t border-gray-100">
-                    🌿 = currently on farm · All scores driven by the{' '}
+                    🌿 = currently on farm · Crop scores use the fuzzy rule class{' '}
                     <span className="font-semibold capitalize">{fClass}</span> soil fertility result
                   </p>
                 </div>
@@ -509,7 +569,7 @@ export default function AssessmentResult() {
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Based on {fClass} soil fertility
+            Uses the fuzzy rule class ({fClass}) and top-ranked crop
             {fertilizerCrop?.cropName ? ` and the top-ranked crop, ${fertilizerCrop.cropName}` : ''}.
           </p>
         </div>
@@ -749,8 +809,8 @@ function SoilImprovementPlan({ fertilityClass, ph, moisture }) {
         <span className="text-xl">🧪</span> Soil Improvement Plan
       </h3>
       <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-        Your soil is <strong className="capitalize">{fertilityClass}</strong>.
-        These steps can improve it, making more crops suitable over time.
+        The fuzzy rule result is <strong className="capitalize">{fertilityClass}</strong>.
+        These screening-based steps can help improve growing conditions. Confirm fertilizer and pH treatments with a soil test or local agricultural officer.
       </p>
       <div className="space-y-3">
         {actions.map((a, i) => {
