@@ -1,9 +1,40 @@
 const { db } = require('../firebase/admin');
 
+function createApplicationSchedule(cropName) {
+  const cropLabel = cropName ? ` for ${cropName}` : '';
+  return [
+    {
+      timing: '14-21 days before planting',
+      fertilizerType: 'Soil test first; no fertilizer yet',
+      instructions: `Submit a representative soil sample and request pH plus available N-P-K results. Use the crop-specific recommendation${cropLabel} to select a fertilizer and rate.`,
+    },
+    {
+      timing: '7-14 days before planting',
+      fertilizerType: 'Mature compost or fully composted manure',
+      instructions: 'Use only if locally recommended and incorporate it into the soil during bed preparation. Its nutrient content varies; it does not replace a soil-test-based fertilizer plan.',
+    },
+    {
+      timing: 'At planting (Day 0)',
+      fertilizerType: 'Basal fertilizer only if specified by the soil test or local crop guide',
+      instructions: 'Use the recommended product and rate from the soil-test interpretation or municipal agriculture office. Follow the product label; do not let concentrated fertilizer touch seeds, cuttings, or roots.',
+    },
+    {
+      timing: '14-21 days after crop establishment',
+      fertilizerType: 'Side-dress only if the crop-specific plan calls for it',
+      instructions: 'Treat this as a crop check, not an automatic fertilizer date. For fruit trees and other perennial crops, follow a tree-age and growth-stage schedule instead of this annual-crop window.',
+    },
+    {
+      timing: 'Later applications',
+      fertilizerType: 'Only the product and rate in the crop-specific plan',
+      instructions: 'There is no safe universal repeat interval. Follow local extension advice and the product label; avoid adding fertilizer just because the assessment class is poor or moderate.',
+    },
+  ];
+}
+
 const BASE_GUIDANCE = {
   poor: {
     summary: 'The screening result indicates poor soil fertility. Confirm the result with a laboratory soil test before choosing fertilizer.',
-    fertilizerGuidance: 'Do not choose a fertilizer type or application rate from this screening result alone. Use laboratory N-P-K results and local crop guidance.',
+    fertilizerGuidance: 'For organic matter, use mature compost or fully composted manure if locally recommended. Select any mineral fertilizer (including its N-P-K grade and rate) only from a soil test and crop-specific local guidance; this assessment does not identify a nutrient deficiency.',
     recommendedActions: [
       'Request a soil test that includes pH and available nitrogen, phosphorus, and potassium.',
       'Maintain or gradually add well-composted organic matter where appropriate for the crop.',
@@ -17,7 +48,7 @@ const BASE_GUIDANCE = {
   },
   moderate: {
     summary: 'The screening result indicates moderate soil fertility. For the top-ranked crop, use crop-specific nutrient guidance and confirm nutrient needs with a soil test.',
-    fertilizerGuidance: 'This assessment does not measure soil N-P-K, so it cannot identify a fertilizer formulation or safe application rate. Base fertilizer selection and amount on a laboratory soil test and local crop recommendations.',
+    fertilizerGuidance: 'Maintain organic matter with mature compost or fully composted manure if locally recommended. Choose a mineral fertilizer grade and rate only from a soil test and crop-specific local guidance; this assessment does not measure soil N-P-K.',
     recommendedActions: [
       'Use the top-ranked crop’s locally recommended nutrient program as a guide, then adjust it using laboratory soil-test results.',
       'Maintain soil organic matter with mature compost or suitable crop residues.',
@@ -31,7 +62,7 @@ const BASE_GUIDANCE = {
   },
   fertile: {
     summary: 'The screening result indicates relatively favorable fertility. For the top-ranked crop, focus on maintaining soil health and avoid unnecessary fertilizer.',
-    fertilizerGuidance: 'A favorable screening class does not measure nutrient reserves or crop nutrient removal. Apply fertilizer only when supported by a soil test or crop-specific local guidance.',
+    fertilizerGuidance: 'Use mature compost or fully composted manure only if needed to maintain organic matter. Apply mineral fertilizer only when a soil test or crop-specific local guidance identifies a need; this assessment does not measure nutrient reserves or crop nutrient removal.',
     recommendedActions: [
       'Maintain soil organic matter with appropriate compost, cover crops, or retained crop residues.',
       'Use crop-specific nutrient guidance and soil-test results to decide whether fertilizer is needed.',
@@ -64,6 +95,8 @@ function createFallbackRecommendation({ fertilityClass, cropName, soilPH }) {
 
   return {
     ...guidance,
+    version: 2,
+    applicationSchedule: createApplicationSchedule(cropName),
     recommendedActions: actions,
     limitations,
     provider: 'SoilSense assessment guidance',
@@ -73,17 +106,22 @@ function createFallbackRecommendation({ fertilityClass, cropName, soilPH }) {
   };
 }
 
-function normalizeReviewedRecommendation(doc, cropId) {
+function normalizeReviewedRecommendation(doc, cropId, cropName) {
   const recommendation = doc.data();
   if (recommendation.reviewStatus !== 'reviewed' || recommendation.isDemoData === true) {
     return null;
   }
 
   return {
+    version: 2,
     summary: recommendation.generalRecommendation ||
       'Follow this reviewed crop-specific fertilizer recommendation.',
     fertilizerGuidance: recommendation.fertilizerGuidance ||
       'Follow the reviewed crop-specific guidance and verify nutrient needs with a soil test.',
+    applicationSchedule: Array.isArray(recommendation.applicationSchedule) &&
+      recommendation.applicationSchedule.length > 0
+      ? recommendation.applicationSchedule
+      : createApplicationSchedule(recommendation.cropName || cropName),
     recommendedActions: Array.isArray(recommendation.actions) ? recommendation.actions : [],
     avoidActions: Array.isArray(recommendation.avoidActions) ? recommendation.avoidActions : [],
     retestRecommendation: recommendation.retestRecommendation ||
@@ -111,7 +149,7 @@ async function getFertilizerRecommendation({ fertilityClass, cropId, cropName, s
     for (const key of keys) {
       const doc = await db.collection('fertilizer_recommendations').doc(key).get();
       if (!doc.exists) continue;
-      const reviewed = normalizeReviewedRecommendation(doc, cropId);
+      const reviewed = normalizeReviewedRecommendation(doc, cropId, cropName);
       if (reviewed) return reviewed;
     }
 
@@ -119,7 +157,7 @@ async function getFertilizerRecommendation({ fertilityClass, cropId, cropName, s
       .where('fertilityClass', '==', normalizedClass)
       .get();
     const reviewed = snapshot.docs
-      .map(doc => normalizeReviewedRecommendation(doc, cropId))
+      .map(doc => normalizeReviewedRecommendation(doc, cropId, cropName))
       .filter(Boolean);
 
     const matchingCrop = reviewed.find(item => item.cropId === cropId);
@@ -137,6 +175,7 @@ async function getFertilizerRecommendation({ fertilityClass, cropId, cropName, s
 }
 
 module.exports = {
+  createApplicationSchedule,
   createFallbackRecommendation,
   getFertilizerRecommendation,
 };

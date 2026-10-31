@@ -266,6 +266,10 @@ export async function generatePDFReport(data) {
       const recommendationLines = [
         fertilizer.summary,
         fertilizer.fertilizerGuidance && `Fertilizer guidance: ${fertilizer.fertilizerGuidance}`,
+        ...(fertilizer.applicationSchedule || []).flatMap(step => [
+          `${step.timing} — ${step.fertilizerType}`,
+          step.instructions,
+        ]),
         ...(fertilizer.recommendedActions || []).map(action => `Recommended: ${action}`),
         ...(fertilizer.avoidActions || []).map(action => `Avoid: ${action}`),
         ...(fertilizer.limitations || []).map(limitation => `Limitation: ${limitation}`),

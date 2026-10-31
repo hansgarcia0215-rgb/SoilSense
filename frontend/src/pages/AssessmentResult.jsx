@@ -456,6 +456,20 @@ export default function AssessmentResult() {
                 <p className="text-sm text-green-800">{fert.fertilizerGuidance}</p>
               </div>
             )}
+            {fert.applicationSchedule?.length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-gray-700 mb-1.5">Application timeline (general guide)</p>
+                <div className="space-y-2">
+                  {fert.applicationSchedule.map((step, i) => (
+                    <div key={`${step.timing}-${i}`} className="rounded-xl border border-gray-100 p-3">
+                      <p className="text-sm font-semibold text-gray-800">{step.timing}</p>
+                      <p className="text-xs font-semibold text-green-800 mt-1">{step.fertilizerType}</p>
+                      <p className="text-xs text-gray-600 mt-1">{step.instructions}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {fert.recommendedActions?.length > 0 && (
               <div>
                 <p className="text-xs font-bold text-gray-700 mb-1.5">Recommended actions</p>

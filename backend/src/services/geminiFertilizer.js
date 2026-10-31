@@ -66,7 +66,8 @@ async function generateFertilizerRecommendation(assessmentContext) {
     'Use only the assessment data provided below. Tailor the advice to the assessed fertility class and the top-ranked crop.',
     'This is a screening assessment, not a laboratory soil test. Never claim that image appearance, pH, moisture, or temperature measures soil nitrogen, phosphorus, or potassium.',
     'Do not invent numeric fertilizer rates, product dosages, local regulations, product labels, or citations. If laboratory N-P-K results are absent, state that numeric rates cannot be determined. Even when lab results are present, advise following locally verified crop recommendations.',
-    'Prefer low-risk practices such as organic matter, drainage/water management, and locally verified crop-specific guidance. Make clear when soil testing or advice from a municipal agricultural officer is needed before applying fertilizer or lime.',
+    'Recommend mature compost or fully composted manure only as an organic-matter amendment when appropriate. Do not prescribe a mineral fertilizer grade or amount without lab N-P-K results and locally verified crop guidance.',
+    'Do not invent a crop-specific application calendar. The application timeline shown by the app is a general checklist; advise farmers to follow crop-stage recommendations from a municipal agricultural officer and the product label. Do not call a check-in date an automatic fertilizer application.',
     'Return concise farmer-friendly language. Include 3 to 5 recommendedActions, 0 to 4 avoidActions, and 1 to 3 limitations. Explain uncertainty and what further test would make the advice more reliable.',
     `Assessment data:\n${JSON.stringify(assessmentContext)}`,
   ].join('\n\n');
@@ -115,6 +116,7 @@ async function generateFertilizerRecommendation(assessmentContext) {
   }
 
   return {
+    version: 2,
     summary: boundedText(recommendation.summary, 'summary', true),
     recommendedActions: boundedList(recommendation.recommendedActions, 'recommendedActions'),
     fertilizerGuidance: boundedText(recommendation.fertilizerGuidance, 'fertilizerGuidance', true),

@@ -12,7 +12,10 @@ const { handleSoilImageUpload } = require('../middleware/upload.middleware');
 const { validate }              = require('../middleware/validate.middleware');
 const { getAssessmentImageMetadata } = require('../utils/assessmentImage');
 const { createError }           = require('../utils/errorHandler');
-const { getFertilizerRecommendation } = require('../services/fertilizerRecommendations');
+const {
+  createApplicationSchedule,
+  getFertilizerRecommendation,
+} = require('../services/fertilizerRecommendations');
 
 // All assessment routes require authentication
 router.use(authenticate);
@@ -183,22 +186,30 @@ router.post('/:id/fertilizer-recommendation',
         return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
       }
 
-      if (assessment.aiFertilizerRecommendation?.kind === 'gemini_ai') {
-        return res.json({
-          success: true,
-          data: {
-            aiFertilizerRecommendation: assessment.aiFertilizerRecommendation,
-            serviceStatus: assessment.serviceStatus,
-          },
-        });
-      }
-
       const crops = assessment.rootcropResults?.length
         ? assessment.rootcropResults
         : assessment.cropRecommendations || [];
       const cropId = assessment.fertilizerRecommendationCropId ||
         crops.find(crop => crop.cropId)?.cropId || null;
       const topCrop = crops.find(crop => crop.cropId === cropId);
+
+      if (assessment.aiFertilizerRecommendation?.kind === 'gemini_ai' &&
+          assessment.aiFertilizerRecommendation.version === 2) {
+        const aiRecommendation = {
+          ...assessment.aiFertilizerRecommendation,
+          applicationSchedule: assessment.aiFertilizerRecommendation.applicationSchedule?.length
+            ? assessment.aiFertilizerRecommendation.applicationSchedule
+            : createApplicationSchedule(topCrop?.cropName),
+        };
+        return res.json({
+          success: true,
+          data: {
+            aiFertilizerRecommendation: aiRecommendation,
+            serviceStatus: assessment.serviceStatus,
+          },
+        });
+      }
+
       let cropRequirements = null;
       if (cropId) {
         const cropDoc = await db.collection('crops').doc(cropId).get();
@@ -254,6 +265,8 @@ router.post('/:id/fertilizer-recommendation',
           }
           : null,
       });
+      recommendation.version = 2;
+      recommendation.applicationSchedule = createApplicationSchedule(topCrop?.cropName);
 
       const serviceStatus = {
         ...assessment.serviceStatus,
@@ -313,6 +326,24 @@ router.get('/:id', async (req, res, next) => {
       : null;
     let serviceStatus = data.serviceStatus || {};
 
+    if (fertilizerRecommendationData?.kind === 'rule_based' &&
+        fertilizerRecommendationData.version !== 2) {
+      fertilizerRecommendationData = await getFertilizerRecommendation({
+        fertilityClass: data.fuzzyResult?.fertilityClass,
+        cropId: data.fertilizerRecommendationCropId || topCrop?.cropId,
+        cropName: topCrop?.cropName,
+        soilPH: data.sensorData?.soilPH ?? data.fuzzyInputs?.ph ?? null,
+      });
+      await doc.ref.update({ fertilizerRecommendationData });
+    } else if (fertilizerRecommendationData &&
+        (!Array.isArray(fertilizerRecommendationData.applicationSchedule) ||
+          fertilizerRecommendationData.applicationSchedule.length === 0)) {
+      fertilizerRecommendationData = {
+        ...fertilizerRecommendationData,
+        applicationSchedule: createApplicationSchedule(topCrop?.cropName),
+      };
+    }
+
     if (!fertilizerRecommendationData && serviceStatus.fuzzyEngine?.status !== 'offline') {
       fertilizerRecommendationData = await getFertilizerRecommendation({
         fertilityClass: data.fuzzyResult?.fertilityClass,
@@ -348,6 +379,14 @@ router.get('/:id', async (req, res, next) => {
       data: {
         ...data,
         serviceStatus,
+        aiFertilizerRecommendation: data.aiFertilizerRecommendation?.version === 2
+          ? {
+            ...data.aiFertilizerRecommendation,
+            applicationSchedule: data.aiFertilizerRecommendation.applicationSchedule?.length
+              ? data.aiFertilizerRecommendation.applicationSchedule
+              : createApplicationSchedule(topCrop?.cropName),
+          }
+          : null,
         fertilizerRecommendationCropId: data.fertilizerRecommendationCropId || topCrop?.cropId || null,
         fertilizerRecommendationData,
         imageData: getAssessmentImageMetadata(data.imageData),

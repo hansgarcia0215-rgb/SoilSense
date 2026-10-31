@@ -70,6 +70,13 @@ Gemini. The API uses a reviewed matching record from Firestore when one is
 available, otherwise it saves a conservative rule-based recommendation. Older
 assessments also receive this fallback when opened.
 
+Recommendations now include a general timing checklist (soil testing before
+planting, optional mature compost during preparation, and crop checks after
+establishment). These dates are not a fertilizer prescription: this assessment
+does not measure N-P-K, so mineral fertilizer type, rate, and repeat timing must
+come from a soil test and locally verified crop guidance. Perennial crops need
+an age- and growth-stage-specific plan.
+
 To optionally personalize the guidance, create a Gemini API key in
 [Google AI Studio](https://aistudio.google.com/apikey) and set `GEMINI_API_KEY`
 in `backend/.env` for local development or in the **SoilSense API** Render
