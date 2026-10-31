@@ -64,13 +64,20 @@ Soil Fertility Classification + Rootcrop Recommendations
 Soil photos are resized and compressed to at most 450 KiB before being saved
 inside the Firestore assessment document. Cloud Storage is not required.
 
-For assessment-specific fertilizer guidance, create a Gemini API key in
+Every assessment immediately receives cautious fertilizer decision-support
+guidance based on the fertility class and top-ranked crop; it does not wait for
+Gemini. The API uses a reviewed matching record from Firestore when one is
+available, otherwise it saves a conservative rule-based recommendation. Older
+assessments also receive this fallback when opened.
+
+To optionally personalize the guidance, create a Gemini API key in
 [Google AI Studio](https://aistudio.google.com/apikey) and set `GEMINI_API_KEY`
 in `backend/.env` for local development or in the **SoilSense API** Render
-service environment. The API calls Gemini after the fuzzy assessment and saves
-the response with the assessment in Firestore. Keep this key server-side; never
-add it to `frontend/.env`, Vercel variables, or ESP32 firmware. `GEMINI_MODEL`
-defaults to `gemini-3.8-flash` and can be changed if needed.
+service environment. Users can request Gemini advice from an assessment result;
+it is saved to that assessment in Firestore and does not block assessment
+creation. Keep this key server-side; never add it to `frontend/.env`, Vercel
+variables, or ESP32 firmware. `GEMINI_MODEL` defaults to `gemini-3.8-flash` and
+can be changed if needed.
 Restrict the key to the Gemini API in Google AI Studio/Cloud Console and check
 that the project has the required API access and quota.
 

@@ -25,7 +25,7 @@ const { v4: uuidv4 } = require('uuid');
 const { db } = require('../firebase/admin');
 const { generateAssessmentId } = require('../utils/assessmentId');
 const { createError } = require('../utils/errorHandler');
-const { generateFertilizerRecommendation } = require('./geminiFertilizer');
+const { getFertilizerRecommendation } = require('./fertilizerRecommendations');
 const {
   compressAssessmentImage,
   MAX_ASSESSMENT_DOCUMENT_BYTES,
@@ -98,7 +98,8 @@ async function runAssessment(params) {
   const serviceStatus = {
     imageProcessing: { status: 'offline', message: null },
     fuzzyEngine: { status: 'offline', message: null },
-    fertilizerRecommendation: { status: 'not_configured', message: null },
+    fertilizerRecommendation: { status: 'ready', message: null },
+    aiFertilizerRecommendation: { status: 'not_requested', message: null },
   };
 
   try {
@@ -228,64 +229,25 @@ async function runAssessment(params) {
     };
   }
 
-  // ── Step 5: Generate assessment-based fertilizer guidance with Gemini ─────
-  let aiFertilizerRecommendation = null;
+  // ── Step 5: Resolve immediate reviewed or rule-based guidance ─────────────
+  const topCrop = rootcropResults.find(crop => crop.cropId === fertRecommCropId);
+  let fertilizerRecommendationData = null;
   if (serviceStatus.fuzzyEngine.status === 'online') {
-    try {
-      const topCrop = rootcropResults.find(crop => crop.cropId === fertRecommCropId);
-      const cropRecord = crops.find(crop => crop.cropId === fertRecommCropId);
-      const cropRequirements = cropRecord?.requirements;
-      aiFertilizerRecommendation = await generateFertilizerRecommendation({
-        location: {
-          municipality: MUNICIPALITY,
-          province: PROVINCE,
-          region: REGION,
-        },
-        assessment: {
-          fertilityClass: fuzzyResult.fertilityClass,
-          fertilityScore: fuzzyResult.fertilityScore,
-          confidence: fuzzyResult.confidence,
-          confidenceLevel: fuzzyResult.confidenceLevel,
-        },
-        measurements: {
-          soilPH: soilPH != null ? parseFloat(soilPH) : null,
-          soilMoisture: soilMoisture != null ? parseFloat(soilMoisture) : null,
-          soilTemperature: soilTemperature != null ? parseFloat(soilTemperature) : null,
-        },
-        imageAssessment: {
-          visualCondition: derivedInputs.visual_condition || null,
-          imageQuality: derivedInputs.image_quality || null,
-        },
-        topRankedCrop: topCrop ? {
-          cropId: topCrop.cropId,
-          cropName: topCrop.cropName,
-          suitabilityScore: topCrop.suitabilityScore,
-          requirements: cropRequirements ? {
-            phMin: cropRequirements.phMin,
-            phMax: cropRequirements.phMax,
-            phOptimal: cropRequirements.phOptimal,
-            moistureMin: cropRequirements.moistureMin,
-            moistureMax: cropRequirements.moistureMax,
-            moistureOptimal: cropRequirements.moistureOptimal,
-            fertilityMin: cropRequirements.fertilityMin,
-            drainagePreference: cropRequirements.drainagePreference,
-            soilTexturePreference: cropRequirements.soilTexturePreference,
-          } : null,
-        } : null,
-        laboratoryNpkResults: null,
-      });
-      serviceStatus.fertilizerRecommendation = { status: 'online', message: null };
-    } catch (err) {
-      console.error('[Orchestrator] Gemini fertilizer recommendation failed:', err.message);
-      serviceStatus.fertilizerRecommendation = {
-        status: err.code === 'GEMINI_NOT_CONFIGURED' ? 'not_configured' : 'offline',
-        message: err.message,
-      };
-    }
+    fertilizerRecommendationData = await getFertilizerRecommendation({
+      fertilityClass: fuzzyResult.fertilityClass,
+      cropId: fertRecommCropId,
+      cropName: topCrop?.cropName,
+      soilPH: soilPH != null ? parseFloat(soilPH) : null,
+    });
+    serviceStatus.fertilizerRecommendation = {
+      status: 'ready',
+      source: fertilizerRecommendationData.kind,
+      message: null,
+    };
   } else {
     serviceStatus.fertilizerRecommendation = {
       status: 'unavailable',
-      message: 'Gemini recommendations require a completed fuzzy assessment.',
+      message: 'A fertilizer recommendation requires a completed fuzzy assessment.',
     };
   }
 
@@ -345,7 +307,8 @@ async function runAssessment(params) {
     cropRecommendations: rootcropResults,
     allCropsRanked,
     fertilizerRecommendationCropId: fertRecommCropId,
-    aiFertilizerRecommendation,
+    fertilizerRecommendationData,
+    aiFertilizerRecommendation: null,
     confidenceData,
 
     processingTimeMs,

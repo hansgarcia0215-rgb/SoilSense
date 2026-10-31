@@ -65,7 +65,7 @@ async function generateFertilizerRecommendation(assessmentContext) {
     'You are generating cautious, practical soil-nutrient management guidance for a farmer in Roxas, Oriental Mindoro, Philippines.',
     'Use only the assessment data provided below. Tailor the advice to the assessed fertility class and the top-ranked crop.',
     'This is a screening assessment, not a laboratory soil test. Never claim that image appearance, pH, moisture, or temperature measures soil nitrogen, phosphorus, or potassium.',
-    'Do not provide numeric fertilizer rates, product dosages, or precise N-P-K requirements because no laboratory N-P-K result is supplied. Do not invent local regulations, product labels, or citations.',
+    'Do not invent numeric fertilizer rates, product dosages, local regulations, product labels, or citations. If laboratory N-P-K results are absent, state that numeric rates cannot be determined. Even when lab results are present, advise following locally verified crop recommendations.',
     'Prefer low-risk practices such as organic matter, drainage/water management, and locally verified crop-specific guidance. Make clear when soil testing or advice from a municipal agricultural officer is needed before applying fertilizer or lime.',
     'Return concise farmer-friendly language. Include 3 to 5 recommendedActions, 0 to 4 avoidActions, and 1 to 3 limitations. Explain uncertainty and what further test would make the advice more reliable.',
     `Assessment data:\n${JSON.stringify(assessmentContext)}`,
@@ -89,7 +89,7 @@ async function generateFertilizerRecommendation(assessmentContext) {
           'Content-Type': 'application/json',
           'x-goog-api-key': apiKey,
         },
-        timeout: 45000,
+        timeout: 25000,
       }
     );
   } catch (error) {
@@ -123,6 +123,8 @@ async function generateFertilizerRecommendation(assessmentContext) {
     limitations: boundedList(recommendation.limitations, 'limitations'),
     provider: 'Google Gemini',
     model: response.data?.modelVersion || model,
+    source: 'AI-generated decision-support guidance; not a laboratory fertilizer prescription.',
+    kind: 'gemini_ai',
     generatedAt: new Date(),
   };
 }

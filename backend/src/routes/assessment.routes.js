@@ -12,6 +12,7 @@ const { handleSoilImageUpload } = require('../middleware/upload.middleware');
 const { validate }              = require('../middleware/validate.middleware');
 const { getAssessmentImageMetadata } = require('../utils/assessmentImage');
 const { createError }           = require('../utils/errorHandler');
+const { getFertilizerRecommendation } = require('../services/fertilizerRecommendations');
 
 // All assessment routes require authentication
 router.use(authenticate);
@@ -163,6 +164,127 @@ router.get('/', async (req, res, next) => {
 });
 
 // ─── Get Single Assessment ────────────────────────────────────
+router.post('/:id/fertilizer-recommendation',
+  [param('id').trim().notEmpty().withMessage('Assessment ID is required.')],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { db } = require('../firebase/admin');
+      const { uid, role } = req.user;
+      const assessmentRef = db.collection('soil_assessments').doc(req.params.id);
+      const assessmentDoc = await assessmentRef.get();
+
+      if (!assessmentDoc.exists) {
+        return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'Assessment not found.' });
+      }
+
+      const assessment = assessmentDoc.data();
+      if (role === 'farmer' && assessment.userId !== uid) {
+        return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
+      }
+
+      if (assessment.aiFertilizerRecommendation?.kind === 'gemini_ai') {
+        return res.json({
+          success: true,
+          data: {
+            aiFertilizerRecommendation: assessment.aiFertilizerRecommendation,
+            serviceStatus: assessment.serviceStatus,
+          },
+        });
+      }
+
+      const crops = assessment.rootcropResults?.length
+        ? assessment.rootcropResults
+        : assessment.cropRecommendations || [];
+      const cropId = assessment.fertilizerRecommendationCropId ||
+        crops.find(crop => crop.cropId)?.cropId || null;
+      const topCrop = crops.find(crop => crop.cropId === cropId);
+      let cropRequirements = null;
+      if (cropId) {
+        const cropDoc = await db.collection('crops').doc(cropId).get();
+        cropRequirements = cropDoc.exists ? cropDoc.data().requirements || null : null;
+      }
+
+      const requirements = cropRequirements ? {
+        phMin: cropRequirements.phMin,
+        phMax: cropRequirements.phMax,
+        phOptimal: cropRequirements.phOptimal,
+        moistureMin: cropRequirements.moistureMin,
+        moistureMax: cropRequirements.moistureMax,
+        moistureOptimal: cropRequirements.moistureOptimal,
+        fertilityMin: cropRequirements.fertilityMin,
+        drainagePreference: cropRequirements.drainagePreference,
+        soilTexturePreference: cropRequirements.soilTexturePreference,
+      } : null;
+
+      const { generateFertilizerRecommendation } = require('../services/geminiFertilizer');
+      const recommendation = await generateFertilizerRecommendation({
+        location: {
+          municipality: assessment.location?.municipality,
+          province: assessment.location?.province,
+          region: assessment.location?.region,
+        },
+        assessment: {
+          fertilityClass: assessment.fuzzyResult?.fertilityClass,
+          fertilityScore: assessment.fuzzyResult?.fertilityScore,
+          confidence: assessment.fuzzyResult?.confidence,
+          confidenceLevel: assessment.fuzzyResult?.confidenceLevel,
+        },
+        measurements: {
+          soilPH: assessment.sensorData?.soilPH ?? assessment.fuzzyInputs?.ph ?? null,
+          soilMoisture: assessment.sensorData?.soilMoisture ?? assessment.fuzzyInputs?.moisture ?? null,
+          soilTemperature: assessment.sensorData?.soilTemperature ?? assessment.fuzzyInputs?.temperature ?? null,
+        },
+        imageAssessment: {
+          visualCondition: assessment.fuzzyInputs?.visualCondition || null,
+          imageQuality: assessment.imageFeatures?.imageQuality || null,
+        },
+        topRankedCrop: topCrop ? {
+          cropId: topCrop.cropId,
+          cropName: topCrop.cropName,
+          suitabilityScore: topCrop.suitabilityScore,
+          requirements,
+        } : null,
+        laboratoryNpkResults: assessment.labValidation?.isValidated
+          ? {
+            nitrogen: assessment.labValidation.labNitrogen ?? null,
+            phosphorus: assessment.labValidation.labPhosphorus ?? null,
+            potassium: assessment.labValidation.labPotassium ?? null,
+            ph: assessment.labValidation.labPH ?? null,
+          }
+          : null,
+      });
+
+      const serviceStatus = {
+        ...assessment.serviceStatus,
+        aiFertilizerRecommendation: { status: 'online', message: null },
+      };
+      await assessmentRef.update({
+        aiFertilizerRecommendation: recommendation,
+        serviceStatus,
+        updatedAt: new Date(),
+      });
+
+      res.json({
+        success: true,
+        data: {
+          aiFertilizerRecommendation: recommendation,
+          serviceStatus,
+        },
+      });
+    } catch (err) {
+      if (err.code === 'GEMINI_NOT_CONFIGURED' || err.code === 'GEMINI_REQUEST_FAILED') {
+        return next(createError(
+          err.code === 'GEMINI_NOT_CONFIGURED' ? 503 : 502,
+          err.code,
+          err.message
+        ));
+      }
+      next(err);
+    }
+  }
+);
+
 router.get('/:id', async (req, res, next) => {
   try {
     const { db } = require('../firebase/admin');
@@ -180,10 +302,54 @@ router.get('/:id', async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'Access denied.' });
     }
 
+    const crops = data.rootcropResults?.length
+      ? data.rootcropResults
+      : data.cropRecommendations || [];
+    const topCrop = crops.find(crop =>
+      crop.cropId === data.fertilizerRecommendationCropId
+    ) || crops.find(crop => crop.cropId);
+    let fertilizerRecommendationData = data.fertilizerRecommendationData?.kind
+      ? data.fertilizerRecommendationData
+      : null;
+    let serviceStatus = data.serviceStatus || {};
+
+    if (!fertilizerRecommendationData && serviceStatus.fuzzyEngine?.status !== 'offline') {
+      fertilizerRecommendationData = await getFertilizerRecommendation({
+        fertilityClass: data.fuzzyResult?.fertilityClass,
+        cropId: data.fertilizerRecommendationCropId || topCrop?.cropId,
+        cropName: topCrop?.cropName,
+        soilPH: data.sensorData?.soilPH ?? data.fuzzyInputs?.ph ?? null,
+      });
+      serviceStatus = {
+        ...serviceStatus,
+        fertilizerRecommendation: {
+          status: 'ready',
+          source: fertilizerRecommendationData.kind,
+          message: null,
+        },
+      };
+      await doc.ref.update({
+        fertilizerRecommendationCropId: data.fertilizerRecommendationCropId || topCrop?.cropId || null,
+        fertilizerRecommendationData,
+        serviceStatus,
+      });
+    } else if (!fertilizerRecommendationData) {
+      serviceStatus = {
+        ...serviceStatus,
+        fertilizerRecommendation: {
+          status: 'unavailable',
+          message: 'A fertilizer recommendation requires a completed fuzzy assessment.',
+        },
+      };
+    }
+
     res.json({
       success: true,
       data: {
         ...data,
+        serviceStatus,
+        fertilizerRecommendationCropId: data.fertilizerRecommendationCropId || topCrop?.cropId || null,
+        fertilizerRecommendationData,
         imageData: getAssessmentImageMetadata(data.imageData),
       },
     });

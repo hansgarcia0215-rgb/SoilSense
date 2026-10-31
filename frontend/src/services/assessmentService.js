@@ -66,6 +66,11 @@ const assessmentService = {
     return res.data;
   },
 
+  async generateFertilizerRecommendation(assessmentId) {
+    const res = await api.post(`/assessments/${encodeURIComponent(assessmentId)}/fertilizer-recommendation`);
+    return res.data;
+  },
+
   async getImage(assessmentId, signal) {
     return api.get(`/assessments/${encodeURIComponent(assessmentId)}/image`, {
       responseType: 'blob',
