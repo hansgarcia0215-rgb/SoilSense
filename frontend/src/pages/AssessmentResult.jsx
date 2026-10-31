@@ -326,12 +326,6 @@ export default function AssessmentResult() {
             </div>
           </div>
 
-          {/* Explanation */}
-          {f.explanation && (
-            <p className="text-xs text-gray-500 leading-relaxed mt-4 pt-4 border-t border-white/60">
-              {f.explanation}
-            </p>
-          )}
           {hasScreeningModel && screeningScore == null && (
             <p className="mt-4 border-t border-white/60 pt-4 text-xs text-amber-800">
               No screening score is available. Provide a valid pH or moisture reading, or an image analysis result.
@@ -352,10 +346,6 @@ export default function AssessmentResult() {
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-amber-800">
-                {f.screeningDisclaimer || 'This preliminary index uses available pH, moisture, and image-condition inputs. It is not a laboratory measurement of soil fertility or N-P-K.'}
-                {' '}Sensor calibration and field validation are required; rule confidence is not accuracy.
-              </p>
             </div>
           )}
 
