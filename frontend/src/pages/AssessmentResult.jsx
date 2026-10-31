@@ -39,9 +39,11 @@ export default function AssessmentResult() {
   const [showComparison,  setShowComparison]  = useState(false);
   const [showTechnical,   setShowTechnical]   = useState(false);
   const [showAllCrops,    setShowAllCrops]    = useState(false);
+  const [selectedCropCategory, setSelectedCropCategory] = useState('all');
   const [generatingFertilizerAdvice, setGeneratingFertilizerAdvice] = useState(false);
 
   useEffect(() => {
+    setSelectedCropCategory('all');
     assessmentService.getById(id)
       .then(res => setData(res.data))
       .catch(() => setError('Assessment not found or you do not have access.'))
@@ -103,6 +105,38 @@ export default function AssessmentResult() {
       ? data.cropRecommendations
       : [];
   const allCrops = data.allCropsRanked || [];
+  const rankedCrops = allCrops.length ? allCrops : crops;
+  const categorizeCrop = crop => {
+    const category = `${crop.category || ''} ${crop.cropId || ''} ${crop.cropName || ''}`.toLowerCase();
+    if (/flower|ornamental|bugambilya/.test(category)) return 'Flowers & ornamentals';
+    if (/fruit|citrus|mango|durian|mangosteen|lanzones|avocado|banana|coconut|palm/.test(category)) return 'Fruits';
+    if (/root|tuber|cassava|sweet.?potato|taro|ube|arrow.?root/.test(category)) return 'Root crops';
+    if (/vegetable/.test(category)) return 'Vegetables';
+    return 'Other crops';
+  };
+  const groupedCrops = rankedCrops.reduce((groups, crop) => {
+    const category = categorizeCrop(crop);
+    groups[category] = [...(groups[category] || []), crop];
+    return groups;
+  }, {});
+  const cropCategories = Object.keys(groupedCrops).sort((a, b) => {
+    const order = ['Fruits', 'Flowers & ornamentals', 'Vegetables', 'Root crops', 'Other crops'];
+    return order.indexOf(a) - order.indexOf(b);
+  });
+  const filteredRankedCrops = selectedCropCategory === 'all'
+    ? rankedCrops
+    : groupedCrops[selectedCropCategory] || [];
+  const topTwoCrops = filteredRankedCrops.slice(0, 2).map((crop, index) => {
+    const meetsThreshold = crop.meetsThreshold ??
+      ['BEST', 'SECOND_BEST'].includes(crop.status);
+    return {
+      ...crop,
+      rank: index + 1,
+      status: index === 0
+        ? (meetsThreshold ? 'BEST' : 'CLOSEST')
+        : (meetsThreshold ? 'SECOND_BEST' : 'NOT_SUITABLE'),
+    };
+  });
   const fert   = data.aiFertilizerRecommendation || data.fertilizerRecommendationData;
   const isAiFertilizer = fert?.kind === 'gemini_ai';
 
@@ -316,26 +350,63 @@ export default function AssessmentResult() {
             </div>
           </div>
 
-          {/* Crop cards */}
-          {crops.map((crop, i) => (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter crop recommendations by category">
+            <button
+              type="button"
+              onClick={() => setSelectedCropCategory('all')}
+              aria-pressed={selectedCropCategory === 'all'}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                selectedCropCategory === 'all'
+                  ? 'border-green-600 bg-green-600 text-white'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-green-300'
+              }`}
+            >
+              All crops
+            </button>
+            {cropCategories.map(category => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCropCategory(category)}
+                aria-pressed={selectedCropCategory === category}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  selectedCropCategory === category
+                    ? 'border-green-600 bg-green-600 text-white'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-green-300'
+                }`}
+              >
+                {category} ({groupedCrops[category].length})
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 px-1">
+            Showing the top {topTwoCrops.length} {selectedCropCategory === 'all'
+              ? 'crops overall'
+              : `crops in ${selectedCropCategory}`} by suitability score.
+          </p>
+
+          {/* Top two recommendations for the selected category */}
+          {topTwoCrops.map((crop, i) => (
             <CropResult key={crop.cropId || crop.rank} result={crop} index={i} />
           ))}
 
           {/* Compare button */}
           <button
             onClick={() => setShowComparison(!showComparison)}
+            disabled={topTwoCrops.length < 2}
             className="w-full flex items-center justify-between px-4 py-3.5
                        bg-white/80 hover:bg-white border border-gray-100 hover:border-gray-200
                        rounded-2xl text-sm font-medium text-gray-600 hover:text-gray-900
+                       disabled:cursor-not-allowed disabled:opacity-50
                        transition-all duration-200 group"
           >
-            <span>📊 Compare top three crops side-by-side</span>
+            <span>📊 Compare the top two shown</span>
             <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300
                                      ${showComparison ? 'rotate-180' : ''}`} />
           </button>
           {showComparison && (
             <div className="card animate-slide-down">
-              <CropComparison crops={crops} />
+              <CropComparison crops={topTwoCrops} />
             </div>
           )}
           {/* Full crops ranking */}
